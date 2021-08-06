@@ -237,11 +237,11 @@ The `CODEBLOCK_START` HTML comment config block has the following properties:
 | Name          | Type                  | Required | Default                                             | Description                                                    |
 | ------------- | --------------------- | -------- | --------------------------------------------------- | -------------------------------------------------------------- |
 | `value`       | `string`              | `true`   |                                                     | Command to execute or file to retrieve                         |
-| `type`        | `'command' \| 'file'` | `false`  | `'file'`                                            | Type of execution                                              |
-| `language`    | `string`              | `false`  | `command`:&nbsp;`bash`, `file`:&nbsp;File extension | Syntax highlighting language                                   |
-| `hideValue`   | `boolean`             | `false`  | `false`                                             | Do not display `File: foo.js` or `$ npx foo` on the first line |
-| `trim`        | `boolean`             | `false`  | `true`                                              | Trim whitespace from the ends of file or command output        |
 | `environment` | `object`              | `false`  | `{}`                                                | Run `command` executions with the given environment values     |
+| `hideValue`   | `boolean`             | `false`  | `false`                                             | Do not display `File: foo.js` or `$ npx foo` on the first line |
+| `language`    | `string`              | `false`  | `command`:&nbsp;`bash`, `file`:&nbsp;File extension | Syntax highlighting language                                   |
+| `trim`        | `boolean`             | `false`  | `true`                                              | Trim whitespace from the ends of file or command output        |
+| `type`        | `'command' \| 'file'` | `false`  | `'file'`                                            | Type of execution                                              |
 
 ## Contributing
 
