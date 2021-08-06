@@ -30,7 +30,14 @@ Optionally, wire up `markdown-inject` to a git pre-commit hook tool like [husky]
 
 ## Usage
 
-<!-- CODEBLOCK_START {"type": "command", "value": "node dist --help", "hideValue": true} -->
+<!--
+  CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "npm run --silent markdown-inject -- --help",
+    "hideValue": true
+  }
+-->
 <!-- prettier-ignore -->
 ~~~~~~~~~~bash
 Usage: markdown-inject [options] <glob pattern>
@@ -42,13 +49,13 @@ Examples:
 Add file or command output to markdown documents.
 
 Options:
-  -V, --version                  output the version number
-  -B --block-prefix <prefix>     specifies the prefix for START and END HTML
-                                 comment blocks (default: "CODEBLOCK")
-  -N --no-follow-symbolic-links  prevents globs from following symlinks
-  -Q --quiet                     emits no console log statements (default:
-                                 false)
-  -h, --help                     display help for command
+  -v, --version                   output the version number
+  -b, --block-prefix <prefix>     specifies the prefix for START and END HTML
+                                  comment blocks (default: "CODEBLOCK")
+  -n, --no-follow-symbolic-links  prevents globs from following symlinks
+  -q, --quiet                     emits no console log statements (default:
+                                  false)
+  -h, --help                      display help for command
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->
