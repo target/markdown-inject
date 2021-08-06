@@ -1,0 +1,57 @@
+{
+  "name": "markdown-inject",
+  "version": "0.2.2",
+  "description": "Add file or command output to markdown documents.",
+  "main": "dist/index.js",
+  "bin": {
+    "markdown-inject": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "npm run build -- -w",
+    "prebuild": "npm run clean",
+    "build": "tsc --build",
+    "clean": "rm -rf dist",
+    "lint": "eslint .",
+    "test": "jest $( [[ $CI == true ]] && echo '' || echo --watchAll )",
+    "prepare": "husky install && npm run build",
+    "validate": "npm run lint && CI=true npm test && npm run clean && npm run build",
+    "markdown-inject": "node dist './**/*.md'"
+  },
+  "dependencies": {
+    "chalk": "4.1.0",
+    "commander": "7.2.0",
+    "fs-extra": "9.1.0",
+    "globby": "11.0.4"
+  },
+  "devDependencies": {
+    "@types/commander": "2.12.2",
+    "@types/fs-extra": "9.0.11",
+    "@types/jest": "26.0.22",
+    "@types/node": "15.12.2",
+    "@typescript-eslint/eslint-plugin": "4.22.0",
+    "@typescript-eslint/parser": "4.22.0",
+    "eslint": "7.24.0",
+    "eslint-config-prettier": "8.2.0",
+    "eslint-plugin-prettier": "3.4.0",
+    "husky": "6.0.0",
+    "jest": "26.6.3",
+    "prettier": "2.2.1",
+    "standard-version": "9.2.0",
+    "ts-jest": "26.5.5",
+    "ts-node": "9.1.1",
+    "typescript": "4.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:target/markdown-inject"
+  },
+  "keywords": [
+    "markdown",
+    "inject",
+    "markdown inject"
+  ],
+  "author": ""
+}
