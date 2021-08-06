@@ -15,9 +15,9 @@
     "build": "tsc --build",
     "clean": "rm -rf dist",
     "lint": "eslint .",
-    "test": "jest $( [[ $CI == true ]] && echo '' || echo --watchAll )",
-    "prepare": "husky install && npm run build",
-    "validate": "npm run lint && CI=true npm test && npm run clean && npm run build",
+    "test": "jest",
+    "prepare": "husky install",
+    "validate": "npm run lint && npm test && npm run build",
     "markdown-inject": "node dist './**/*.md'"
   },
   "dependencies": {

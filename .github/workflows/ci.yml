@@ -1,0 +1,25 @@
+name: CI
+on: [push]
+jobs:
+  Validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Repo
+        uses: actions/checkout@v2
+
+      - name: Set Up NodeJs
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.17.4'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
