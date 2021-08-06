@@ -1,7 +1,7 @@
 name: CI
 on: [push]
 jobs:
-  validate:
+  Validate:
     runs-on: ubuntu-latest
     steps:
       - name: Clone Repo
