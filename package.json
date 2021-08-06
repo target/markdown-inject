@@ -16,8 +16,8 @@
     "clean": "rm -rf dist",
     "lint": "eslint .",
     "test": "jest",
-    "prepare": "husky install && npm run build",
-    "validate": "npm run lint && CI=true npm test && npm run clean && npm run build",
+    "prepare": "husky install",
+    "validate": "npm run lint && npm test && npm run build",
     "markdown-inject": "node dist './**/*.md'"
   },
   "dependencies": {
