@@ -20,6 +20,11 @@ program
     'prevents globs from following symlinks'
   )
   .option('-Q --quiet', 'emits no console log statements', false)
+  .option(
+    '-E --no-system-environment',
+    'prevents "command"s from receiving system environment',
+    false
+  )
   .description('Add file or command output to markdown documents.')
   .usage(
     `[options] <glob pattern>
@@ -37,6 +42,7 @@ Examples:
       followSymbolicLinks: options.followSymbolicLinks,
       globPattern,
       quiet: options.quiet,
+      systemEnvironment: options.systemEnvironment,
     })
   })
 

@@ -48,6 +48,8 @@ Options:
   -N --no-follow-symbolic-links  prevents globs from following symlinks
   -Q --quiet                     emits no console log statements (default:
                                  false)
+  -E --no-system-environment     prevents "command"s from receiving system
+                                 environment
   -h, --help                     display help for command
 ~~~~~~~~~~
 
@@ -55,14 +57,14 @@ Options:
 
 `markdown-inject` expands a given glob for markdown files. Then it discovers the below `CODEBLOCK` HTML comments within each markdown file, performs the appropriate action (in this case, reading another local file), and writes content back into the markdown file:
 
-<!-- CODEBLOCK_START_EXAMPLE1 {"ignore": true} -->
+<!-- CODEBLOCK_START_USAGE {"ignore": true} -->
 
 ```
 <!-- CODEBLOCK_START {"value": ".nvmrc"} -->
 <!-- CODEBLOCK_END -->
 ```
 
-<!-- CODEBLOCK_END_EXAMPLE1 -->
+<!-- CODEBLOCK_END_USAGE -->
 
 ```
 <!-- CODEBLOCK_START {"value": ".nvmrc"} -->
@@ -80,12 +82,10 @@ Output is written between the CODEBLOCK_START and CODEBLOCK_END comments. Output
 
 - A prettier ignore comment introducing the output so that prettier does not further alter existing code.
 - A markdown codeblock is opened with the language specified via configuration.
-- The type:value line is included by default, labeling the output.
+- The `<type>: <value>` line is included by default, labeling the output.
 - The command or file output.
 
 Executing commands follows a similar syntax:
-
-<!-- CODEBLOCK_START_EXAMPLE2 {"ignore": true} -->
 
 ```
 <!-- CODEBLOCK_START {"value": "echo hello world", "type": "command"} -->
@@ -95,14 +95,11 @@ $ echo hello world
 
 hello world
 ~~~~~~~~~~
+
 <!-- CODEBLOCK_END -->
 ```
 
-<!-- CODEBLOCK_END_EXAMPLE2 -->
-
-You can hide the type:value comment from the generated output too:
-
-<!-- CODEBLOCK_START_EXAMPLE3 {"ignore": true} -->
+You can hide the `<type>: <value>` comment from the generated output too:
 
 ```
 <!-- CODEBLOCK_START {"value": "echo hello world", "type": "command", "hideValue": false} -->
@@ -116,19 +113,135 @@ hello world
 <!-- CODEBLOCK_END -->
 ```
 
-<!-- CODEBLOCK_END_EXAMPLE3 -->
+### Environment
+
+System environment is automatically passed to `command`s:
+
+<!--
+  CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "echo \"My home directory is: $HOME\"",
+    "environment": {
+      "comment": "Be careful with these or you'll leak your actual home dir",
+      "HOME": "/Users/me"
+    }
+  }
+-->
+<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ echo "My home directory is: $HOME"
+
+My home directory is: /Users/me
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END -->
+
+In some scenarios, passing system environment to `command`s may be undesirable. This functionality can be disabled using the [`--no-system-environment` CLI flag](#usage). This creates output such as:
+
+<!-- CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "echo \"My password is: $MY_PASSWORD\"",
+    "environment": {
+      "comment": "just in case?",
+      "MY_PASSWORD": ""
+    }
+  }
+-->
+<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ echo "My password is: $MY_PASSWORD"
+
+My password is:
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END -->
+
+Sometimes commands need a little extra nudging via environment to receive a usable output. Environment variables can be added using the `environment` key:
+
+<!-- CODEBLOCK_START_EXAMPLE_PASSED_ENVIRONMENT {"ignore": true} -->
+
+```
+<!--
+  CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "node ./deploy.js --dry-run",
+    "environment": {
+      "SKIP_PRECHECK": "true"
+    }
+  }
+-->
+<!-- CODEBLOCK_END -->
+```
+
+<!-- CODEBLOCK_END_EXAMPLE_PASSED_ENVIRONMENT -->
+
+The `environment` key can also be used to overwrite system environment variables with example values:
+
+```
+<!--
+  CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "echo \"My password is: $MY_PASSWORD\"",
+    "environment": {
+      "MY_PASSWORD": "<insert password here>"
+    }
+  }
+-->
+<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ echo "My password is: $MY_PASSWORD"
+
+My password is: <insert password here>
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END -->
+```
+
+Environment variables with values which follow bash variable naming rules will be substituted into the `command` environment whether or not `--no-system-environment` is enabled. This can be useful for re-introducing necessary environment variables that would be omitted by `--no-system-environment`:
+
+<!-- CODEBLOCK_START_EXAMPLE_MAP_ENV {"ignore": true} -->
+
+```
+<!--
+  CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "echo \"My home directory is: $HOME\nMy password is: $MY_PASSWORD\"",
+    "environment": {
+      "HOME": "$HOME"
+    }
+  }
+-->
+<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ echo "My home directory is: $HOME
+My password is: $MY_PASSWORD"
+
+My home directory is: /Users/me
+My password is:
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END -->
+```
+
+<!-- CODEBLOCK_END_EXAMPLE_MAP_ENV -->
 
 ## Codeblock Configuration
 
 The `CODEBLOCK_START` HTML comment config block has the following properties:
 
-| Name        | Type                  | Required | Default                                   | Description                                                    |
-| ----------- | --------------------- | -------- | ----------------------------------------- | -------------------------------------------------------------- |
-| `value`     | `string`              | `true`   |                                           | Command to execute or file to retrieve                         |
-| `type`      | `'command' \| 'file'` | `false`  | `'file'`                                  | Type of execution.                                             |
-| `language`  | `string`              | `false`  | `command`: `bash`, `file`: File extension | Syntax highlighting language                                   |
-| `hideValue` | `boolean`             | `false`  | `false`                                   | Do not display `File: foo.js` or `$ npx foo` on the first line |
-| `trim`      | `boolean`             | `false`  | `true`                                    | Trim whitespace from the ends of file or command output.       |
+| Name          | Type                  | Required | Default                                             | Description                                                    |
+| ------------- | --------------------- | -------- | --------------------------------------------------- | -------------------------------------------------------------- |
+| `value`       | `string`              | `true`   |                                                     | Command to execute or file to retrieve                         |
+| `type`        | `'command' \| 'file'` | `false`  | `'file'`                                            | Type of execution                                              |
+| `language`    | `string`              | `false`  | `command`:&nbsp;`bash`, `file`:&nbsp;File extension | Syntax highlighting language                                   |
+| `hideValue`   | `boolean`             | `false`  | `false`                                             | Do not display `File: foo.js` or `$ npx foo` on the first line |
+| `trim`        | `boolean`             | `false`  | `true`                                              | Trim whitespace from the ends of file or command output        |
+| `environment` | `object`              | `false`  | `{}`                                                | Run `command` executions with the given environment values     |
 
 ## Contributing
 
