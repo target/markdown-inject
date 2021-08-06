@@ -25,20 +25,34 @@ interface BlockInputOptions extends Omit<BlockOptions, 'type'> {
 interface ReplaceOptions {
   blockPrefix: string
   followSymbolicLinks: boolean
+  forceWrite: boolean
   globPattern: string
   quiet: boolean
 }
 
 const main = async (
-  { blockPrefix, followSymbolicLinks, globPattern, quiet }: ReplaceOptions = {
+  {
+    blockPrefix,
+    followSymbolicLinks,
+    forceWrite,
+    globPattern,
+    quiet,
+  }: ReplaceOptions = {
     blockPrefix: 'CODEBLOCK',
     followSymbolicLinks: true,
+    forceWrite: false,
     globPattern: '**/*.md',
     quiet: false,
   }
 ): Promise<void> => {
   const logger = new Logger(quiet)
-  logger.group('Injecting Markdown Blocks')
+
+  const writeChangedBlocks = forceWrite || !process.env.CI
+  logger.group(
+    writeChangedBlocks
+      ? 'Injecting Markdown Blocks'
+      : 'Checking Markdown Blocks'
+  )
 
   const markdownFiles = await glob(globPattern, {
     followSymbolicLinks,
@@ -194,7 +208,9 @@ ${endPragma}`
     }
 
     if (modifiedFileContents !== originalFileContents) {
-      await fs.writeFile(fileName, modifiedFileContents)
+      if (writeChangedBlocks) {
+        await fs.writeFile(fileName, modifiedFileContents)
+      }
       logger.log(
         `${fileName}: ${blocksChanged} of ${totalBlocks} blocks changed (${blocksIgnored} ignored)`
       )
@@ -233,8 +249,19 @@ ${endPragma}`
     logger.log(
       `Total: ${totalChanges} of ${totalBlocks} blocks (${totalIgnored} ignored)`
     )
+
+    if (!writeChangedBlocks && totalChanges !== 0) {
+      logger.log()
+      logger.error(
+        'ERROR: Block updates detected in CI.\nNo block changes were written.\nCall with --force-write to bypass.'
+      )
+      logger.log()
+      process.exitCode = 1
+    }
   } catch (err) {
+    logger.log()
     logger.error(err)
+    logger.log()
     process.exitCode = 1
   }
   logger.groupEnd()

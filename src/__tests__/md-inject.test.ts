@@ -9,7 +9,8 @@ let logger: {
   error: jest.Mock
 }
 
-let injectMarkdown: () => Promise<void>
+let injectMarkdown: (args?: any) => Promise<void>
+const originalProcessEnv = process.env
 
 describe('Markdown injection', () => {
   beforeEach(async () => {
@@ -37,6 +38,14 @@ describe('Markdown injection', () => {
     jest.mock('../Logger')
     logger = new Logger()
     Logger.mockImplementation(() => logger)
+    delete process.env.CI
+  })
+
+  afterEach(() => {
+    process.exitCode = 0
+    process.env = {
+      ...originalProcessEnv,
+    }
   })
 
   it('collects all in-repo markdown files', async () => {
@@ -287,6 +296,70 @@ console.log('baz')
 
 <!-- CODEBLOCK_END -->`
     expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+  })
+
+  it('throws gracefully when a change would be written in CI', async () => {
+    process.env.CI = 'true'
+    mock({
+      config: {
+        type: 'file',
+        value: 'bar.js',
+      },
+      mockResponse: `console.log('baz')`,
+    })
+
+    await injectMarkdown()
+
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('does not write when a change would be written in CI', async () => {
+    process.env.CI = 'true'
+    mock({
+      config: {
+        type: 'file',
+        value: 'bar.js',
+      },
+      mockResponse: `console.log('baz')`,
+    })
+
+    await injectMarkdown()
+
+    expect(fs.writeFile).not.toHaveBeenCalled()
+  })
+
+  it('writes file changes and does not throw in CI when --force-write is passed', async () => {
+    process.env.CI = 'true'
+    mock({
+      config: {
+        type: 'file',
+        value: 'bar.js',
+      },
+      mockResponse: `console.log('baz')`,
+    })
+
+    await injectMarkdown({
+      forceWrite: true,
+
+      // defaults
+      blockPrefix: 'CODEBLOCK',
+      followSymbolicLinks: true,
+      globPattern: '**/*.md',
+      quiet: false,
+    })
+
+    const outFile = `
+<!-- CODEBLOCK_START {"type":"file","value":"bar.js"} -->
+<!-- prettier-ignore -->
+~~~~~~~~~~js
+File: bar.js
+
+console.log('baz')
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END -->`
+    expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+    expect(process.exitCode).not.toBe(1)
   })
 
   it('trims whitespace (command)', async () => {

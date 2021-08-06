@@ -48,6 +48,8 @@ Options:
   -N --no-follow-symbolic-links  prevents globs from following symlinks
   -Q --quiet                     emits no console log statements (default:
                                  false)
+  -F --force-write               write blocks when CI is truthy (default:
+                                 false)
   -h, --help                     display help for command
 ~~~~~~~~~~
 
@@ -117,6 +119,8 @@ hello world
 ```
 
 <!-- CODEBLOCK_END_EXAMPLE3 -->
+
+Calling `markdown-inject` with a truthy `$CI` environment variable will exit with code `1` without writing any changes if any blocks would have been modified. If you instead would intentionally like to write content in a CI environment, this can be bypassed with the [`--force-write` CLI flag](#usage).
 
 ## Codeblock Configuration
 

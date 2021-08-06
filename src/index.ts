@@ -20,6 +20,7 @@ program
     'prevents globs from following symlinks'
   )
   .option('-Q --quiet', 'emits no console log statements', false)
+  .option('-F --force-write', 'write blocks when CI is truthy', false)
   .description('Add file or command output to markdown documents.')
   .usage(
     `[options] <glob pattern>
@@ -35,6 +36,7 @@ Examples:
     await injectMarkdown({
       blockPrefix: options.blockPrefix,
       followSymbolicLinks: options.followSymbolicLinks,
+      forceWrite: options.forceWrite,
       globPattern,
       quiet: options.quiet,
     })
