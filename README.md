@@ -2,7 +2,7 @@
 
 Add file or command output to markdown documents.
 
-<!-- GIF -->
+<img src="./demo.gif" alt="Functionality Demo" height="600" />
 
 ## Installation
 
