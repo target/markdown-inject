@@ -28,7 +28,7 @@ interface ReplaceOptions {
   followSymbolicLinks: boolean
   globPattern: string
   quiet: boolean
-  systemEnvironment: boolean
+  useSystemEnvironment: boolean
 }
 
 const main = async (
@@ -37,13 +37,13 @@ const main = async (
     followSymbolicLinks,
     globPattern,
     quiet,
-    systemEnvironment,
+    useSystemEnvironment,
   }: ReplaceOptions = {
     blockPrefix: 'CODEBLOCK',
     followSymbolicLinks: true,
     globPattern: '**/*.md',
     quiet: false,
-    systemEnvironment: true,
+    useSystemEnvironment: true,
   }
 ): Promise<void> => {
   const logger = new Logger(quiet)
@@ -127,7 +127,7 @@ const main = async (
           out = await new Promise((resolve, reject) => {
             exec(
               value,
-              { env: prepareEnvironment(environment, systemEnvironment) },
+              { env: prepareEnvironment(environment, useSystemEnvironment) },
               (err, stdout) => {
                 if (err) {
                   return reject(err)

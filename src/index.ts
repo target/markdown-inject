@@ -42,7 +42,7 @@ Examples:
       followSymbolicLinks: options.followSymbolicLinks,
       globPattern,
       quiet: options.quiet,
-      systemEnvironment: options.systemEnvironment,
+      useSystemEnvironment: options.systemEnvironment,
     })
   })
 
