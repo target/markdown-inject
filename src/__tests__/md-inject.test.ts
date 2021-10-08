@@ -9,7 +9,8 @@ let logger: {
   error: jest.Mock
 }
 
-let injectMarkdown: () => Promise<void>
+let injectMarkdown: (args?: any) => Promise<void>
+const originalProcessEnv = process.env
 
 describe('Markdown injection', () => {
   beforeEach(async () => {
@@ -37,6 +38,8 @@ describe('Markdown injection', () => {
     jest.mock('../Logger')
     logger = new Logger()
     Logger.mockImplementation(() => logger)
+
+    process.env = originalProcessEnv
   })
 
   it('collects all in-repo markdown files', async () => {
@@ -775,6 +778,124 @@ console.log('Hello World')
       will write all of process.env to the console if the assertion fails.
     */
     expect(execConfig.env.FORCE_COLOR).toBe('0')
+  })
+
+  it('passes configured environment to commands', async () => {
+    mock({
+      config: {
+        type: 'command',
+        value: 'npm view react-scripts',
+        environment: {
+          FOO_ENV: 'bar val',
+        },
+      },
+    })
+
+    await injectMarkdown()
+
+    const [, execConfig] = exec.mock.calls[0]
+
+    expect(execConfig.env.FOO_ENV).toBe('bar val')
+  })
+
+  it('passes system environment to commands', async () => {
+    process.env.MY_SYS_ENV = 'a test'
+
+    mock({
+      config: {
+        type: 'command',
+        value: 'npm view react-scripts',
+      },
+    })
+
+    await injectMarkdown()
+
+    const [, execConfig] = exec.mock.calls[0]
+
+    expect(exec).toHaveBeenCalledTimes(1)
+
+    expect(execConfig.env.MY_SYS_ENV).toBe('a test')
+  })
+
+  it('can prevent system environment from being passed', async () => {
+    process.env.MY_SYS_ENV = 'b test'
+
+    mock({
+      config: {
+        type: 'command',
+        value: 'npm view react-scripts',
+      },
+    })
+
+    await injectMarkdown({
+      blockPrefix: 'CODEBLOCK',
+      followSymbolicLinks: true,
+      globPattern: '**/*.md',
+      quiet: false,
+      systemEnvironment: false,
+    })
+
+    const [, execConfig] = exec.mock.calls[0]
+
+    expect(exec).toHaveBeenCalledTimes(1)
+
+    expect(execConfig.env.MY_SYS_ENV).not.toBeDefined()
+  })
+
+  it('can overwrite FORCE_COLOR', async () => {
+    mock({
+      config: {
+        type: 'command',
+        value: 'npm view react-scripts',
+        environment: {
+          FORCE_COLOR: 'true',
+        },
+      },
+    })
+
+    await injectMarkdown()
+
+    const [, execConfig] = exec.mock.calls[0]
+
+    expect(execConfig.env.FORCE_COLOR).toBe('true')
+  })
+
+  it('substitutes passed environment variables from system environment variables', async () => {
+    process.env.MY_SYS_ENV = 'c test'
+    mock({
+      config: {
+        type: 'command',
+        value: 'npm view react-scripts',
+        environment: {
+          MY_PASSED_ENV: '$MY_SYS_ENV',
+        },
+      },
+    })
+
+    await injectMarkdown()
+
+    const [, execConfig] = exec.mock.calls[0]
+
+    expect(execConfig.env.MY_PASSED_ENV).toBe('c test')
+  })
+
+  it('overwrites system environment', async () => {
+    process.env.MY_SYS_ENV = 'd test'
+    mock({
+      config: {
+        type: 'command',
+        value: 'npm view react-scripts',
+        environment: {
+          MY_SYS_ENV: 'e test',
+        },
+      },
+    })
+
+    await injectMarkdown()
+
+    const [, execConfig] = exec.mock.calls[0]
+
+    expect(execConfig.env.MY_SYS_ENV).toBe('e test')
   })
 })
 
