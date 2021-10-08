@@ -55,8 +55,8 @@ Options:
   -n, --no-follow-symbolic-links  prevents globs from following symlinks
   -q, --quiet                     emits no console log statements (default:
                                   false)
-  -e --no-system-environment     prevents "command"s from receiving system
-                                 environment                                  
+  -e, --no-system-environment     prevents "command"s from receiving system
+                                  environment
   -h, --help                      display help for command
 ~~~~~~~~~~
 
@@ -109,11 +109,9 @@ hello world
 You can hide the `<type>: <value>` comment from the generated output too:
 
 ```
-<!-- CODEBLOCK_START {"value": "echo hello world", "type": "command", "hideValue": false} -->
+<!-- CODEBLOCK_START {"value": "echo hello world", "type": "command", "hideValue": true} -->
 <!-- prettier-ignore -->
 ~~~~~~~~~~bash
-$ echo hello world
-
 hello world
 ~~~~~~~~~~
 
