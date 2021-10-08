@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import { exec } from 'child_process'
 import Logger from './Logger'
+import { isCI } from './utils'
 
 enum BlockSourceType {
   file = 'file',
@@ -47,7 +48,7 @@ const main = async (
 ): Promise<void> => {
   const logger = new Logger(quiet)
 
-  const writeChangedBlocks = forceWrite || !process.env.CI
+  const writeChangedBlocks = forceWrite || !isCI()
   logger.group(
     writeChangedBlocks
       ? 'Injecting Markdown Blocks'

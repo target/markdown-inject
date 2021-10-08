@@ -298,57 +298,65 @@ console.log('baz')
     expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
   })
 
-  it('throws gracefully when a change would be written in CI', async () => {
-    process.env.CI = 'true'
-    mock({
-      config: {
-        type: 'file',
-        value: 'bar.js',
-      },
-      mockResponse: `console.log('baz')`,
-    })
+  it.each([[true], ['true'], ['something'], ['yes']])(
+    'throws gracefully when a change would be written in CI',
+    async (CI) => {
+      process.env.CI = CI as string
+      mock({
+        config: {
+          type: 'file',
+          value: 'bar.js',
+        },
+        mockResponse: `console.log('baz')`,
+      })
 
-    await injectMarkdown()
+      await injectMarkdown()
 
-    expect(process.exitCode).toBe(1)
-  })
+      expect(process.exitCode).toBe(1)
+    }
+  )
 
-  it('does not write when a change would be written in CI', async () => {
-    process.env.CI = 'true'
-    mock({
-      config: {
-        type: 'file',
-        value: 'bar.js',
-      },
-      mockResponse: `console.log('baz')`,
-    })
+  it.each([[true], ['true'], ['something'], ['yes']])(
+    'does not write when a change would be written in CI',
+    async (CI) => {
+      process.env.CI = CI as string
+      mock({
+        config: {
+          type: 'file',
+          value: 'bar.js',
+        },
+        mockResponse: `console.log('baz')`,
+      })
 
-    await injectMarkdown()
+      await injectMarkdown()
 
-    expect(fs.writeFile).not.toHaveBeenCalled()
-  })
+      expect(fs.writeFile).not.toHaveBeenCalled()
+    }
+  )
 
-  it('writes file changes and does not throw in CI when --force-write is passed', async () => {
-    process.env.CI = 'true'
-    mock({
-      config: {
-        type: 'file',
-        value: 'bar.js',
-      },
-      mockResponse: `console.log('baz')`,
-    })
+  it.each([[true], ['true'], ['something'], ['yes']])(
+    'writes file changes and does not throw in CI when --force-write is passed',
+    async (CI) => {
+      process.env.CI = CI as string
+      mock({
+        config: {
+          type: 'file',
+          value: 'bar.js',
+        },
+        mockResponse: `console.log('baz')`,
+      })
 
-    await injectMarkdown({
-      forceWrite: true,
+      await injectMarkdown({
+        forceWrite: true,
 
-      // defaults
-      blockPrefix: 'CODEBLOCK',
-      followSymbolicLinks: true,
-      globPattern: '**/*.md',
-      quiet: false,
-    })
+        // defaults
+        blockPrefix: 'CODEBLOCK',
+        followSymbolicLinks: true,
+        globPattern: '**/*.md',
+        quiet: false,
+      })
 
-    const outFile = `
+      const outFile = `
 <!-- CODEBLOCK_START {"type":"file","value":"bar.js"} -->
 <!-- prettier-ignore -->
 ~~~~~~~~~~js
@@ -358,9 +366,47 @@ console.log('baz')
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->`
-    expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
-    expect(process.exitCode).not.toBe(1)
-  })
+      expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+      expect(process.exitCode).not.toBe(1)
+    }
+  )
+
+  it.each([[''], ['false'], [false], [undefined]])(
+    'does not throw when CI is %s',
+    async (CI) => {
+      process.env.CI = CI as string
+      mock({
+        config: {
+          type: 'file',
+          value: 'bar.js',
+        },
+        mockResponse: `console.log('baz')`,
+      })
+
+      await injectMarkdown({
+        forceWrite: true,
+
+        // defaults
+        blockPrefix: 'CODEBLOCK',
+        followSymbolicLinks: true,
+        globPattern: '**/*.md',
+        quiet: false,
+      })
+
+      const outFile = `
+<!-- CODEBLOCK_START {"type":"file","value":"bar.js"} -->
+<!-- prettier-ignore -->
+~~~~~~~~~~js
+File: bar.js
+
+console.log('baz')
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END -->`
+      expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+      expect(process.exitCode).not.toBe(1)
+    }
+  )
 
   it('trims whitespace (command)', async () => {
     mock({
