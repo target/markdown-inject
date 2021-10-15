@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/target/markdown-inject/compare/v1.0.1...v1.1.0) (2021-10-08)
+
+
+### Features
+
+* Adds environment variable controls ([497feb6](https://github.com/target/markdown-inject/commit/497feb603061aa790a3270987a260abed926219f))
+
 ### [1.0.1](https://github.com/target/markdown-inject/compare/v1.0.0...v1.0.1) (2021-08-13)
 
 ## 1.0.0 (2021-08-06)
