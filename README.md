@@ -40,26 +40,7 @@ Optionally, wire up `markdown-inject` to a git pre-commit hook tool like [husky]
 -->
 <!-- prettier-ignore -->
 ~~~~~~~~~~bash
-Usage: markdown-inject [options] <glob pattern>
 
-Examples:
-  $ npx markdown-inject './**/*.md'
-  $ npx markdown-inject 'README.md'
-
-Add file or command output to markdown documents.
-
-Options:
-  -v, --version                   output the version number
-  -b, --block-prefix <prefix>     specifies the prefix for START and END HTML
-                                  comment blocks (default: "CODEBLOCK")
-  -n, --no-follow-symbolic-links  prevents globs from following symlinks
-  -f --force-write                write blocks when CI is truthy (default:
-                                  false)
-  -q, --quiet                     emits no console log statements (default:
-                                  false)
-  -e, --no-system-environment     prevents "command"s from receiving system
-                                  environment
-  -h, --help                      display help for command
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->
