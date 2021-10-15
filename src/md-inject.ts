@@ -10,9 +10,10 @@ enum BlockSourceType {
   command = 'command',
 }
 
-interface BlockOptions {
+export interface BlockOptions {
   value: string
   hideValue?: boolean
+  environment?: NodeJS.ProcessEnv
   ignore?: boolean
   language?: string
   trim?: boolean
@@ -29,6 +30,7 @@ interface ReplaceOptions {
   forceWrite: boolean
   globPattern: string
   quiet: boolean
+  useSystemEnvironment: boolean
 }
 
 const main = async (
@@ -38,12 +40,14 @@ const main = async (
     forceWrite,
     globPattern,
     quiet,
+    useSystemEnvironment,
   }: ReplaceOptions = {
     blockPrefix: 'CODEBLOCK',
     followSymbolicLinks: true,
     forceWrite: false,
     globPattern: '**/*.md',
     quiet: false,
+    useSystemEnvironment: true,
   }
 ): Promise<void> => {
   const logger = new Logger(quiet)
@@ -108,6 +112,7 @@ const main = async (
         hideValue = false,
         trim = true,
         ignore = false,
+        environment = {},
       } = config
 
       if (ignore) {
@@ -132,7 +137,7 @@ const main = async (
           out = await new Promise((resolve, reject) => {
             exec(
               value,
-              { env: { ...process.env, FORCE_COLOR: '0' } },
+              { env: prepareEnvironment(environment, useSystemEnvironment) },
               (err, stdout) => {
                 if (err) {
                   return reject(err)
@@ -266,6 +271,29 @@ ${endPragma}`
     process.exitCode = 1
   }
   logger.groupEnd()
+}
+
+const prepareEnvironment = (
+  providedEnvironment: NodeJS.ProcessEnv,
+  useSystemEnvironment: boolean
+) => {
+  const systemEnvironment = useSystemEnvironment ? process.env : {}
+  providedEnvironment = Object.entries(providedEnvironment)
+    .map(([key, value]) => {
+      const valueEnvMatch = /^\$(\w+)$/.exec(value)
+      if (valueEnvMatch) {
+        const envKey = valueEnvMatch[1]
+        value = process.env[envKey]
+      }
+      return [key, value]
+    })
+    .reduce((agg, [k, v]) => ({ ...agg, [k]: v }), {})
+
+  return {
+    ...systemEnvironment,
+    FORCE_COLOR: '0',
+    ...providedEnvironment,
+  }
 }
 
 export default main

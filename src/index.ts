@@ -7,20 +7,25 @@ const { name, version } = require('../package.json')
 
 const program = new Command()
 program
-  .version(version)
+  .version(version, '-v, --version')
   .name(name)
   .arguments('[globPattern]')
   .option(
-    '-B --block-prefix <prefix>',
+    '-b, --block-prefix <prefix>',
     'specifies the prefix for START and END HTML comment blocks',
     'CODEBLOCK'
   )
   .option(
-    '-N --no-follow-symbolic-links',
+    '-n, --no-follow-symbolic-links',
     'prevents globs from following symlinks'
   )
-  .option('-Q --quiet', 'emits no console log statements', false)
-  .option('-F --force-write', 'write blocks when CI is truthy', false)
+  .option('-f --force-write', 'write blocks when CI is truthy', false)
+  .option('-q, --quiet', 'emits no console log statements', false)
+  .option(
+    '-e, --no-system-environment',
+    'prevents "command"s from receiving system environment',
+    false
+  )
   .description('Add file or command output to markdown documents.')
   .usage(
     `[options] <glob pattern>
@@ -39,6 +44,7 @@ Examples:
       forceWrite: options.forceWrite,
       globPattern,
       quiet: options.quiet,
+      useSystemEnvironment: options.systemEnvironment,
     })
   })
 
