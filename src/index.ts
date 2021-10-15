@@ -19,6 +19,7 @@ program
     '-n, --no-follow-symbolic-links',
     'prevents globs from following symlinks'
   )
+  .option('-f --force-write', 'write blocks when CI is truthy', false)
   .option('-q, --quiet', 'emits no console log statements', false)
   .option(
     '-e, --no-system-environment',
@@ -40,6 +41,7 @@ Examples:
     await injectMarkdown({
       blockPrefix: options.blockPrefix,
       followSymbolicLinks: options.followSymbolicLinks,
+      forceWrite: options.forceWrite,
       globPattern,
       quiet: options.quiet,
       useSystemEnvironment: options.systemEnvironment,

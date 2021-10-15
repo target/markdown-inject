@@ -53,6 +53,8 @@ Options:
   -b, --block-prefix <prefix>     specifies the prefix for START and END HTML
                                   comment blocks (default: "CODEBLOCK")
   -n, --no-follow-symbolic-links  prevents globs from following symlinks
+  -f --force-write                write blocks when CI is truthy (default:
+                                  false)
   -q, --quiet                     emits no console log statements (default:
                                   false)
   -e, --no-system-environment     prevents "command"s from receiving system
@@ -234,6 +236,8 @@ My password is:
 ```
 
 <!-- CODEBLOCK_END_EXAMPLE_MAP_ENV -->
+
+Calling `markdown-inject` with a truthy `$CI` environment variable will exit with code `1` without writing any changes if any blocks would have been modified. If you instead would intentionally like to write content in a CI environment, this can be bypassed with the [`--force-write` CLI flag](#usage).
 
 ## Codeblock Configuration
 
