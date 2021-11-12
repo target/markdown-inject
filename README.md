@@ -82,7 +82,7 @@ Options:
 ~~~~~~~~~~bash
 File: .nvmrc
 
-v14.17.4
+v16.13.0
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->
