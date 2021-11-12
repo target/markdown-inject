@@ -76,54 +76,64 @@ const main = async (
     )
 
     while ((codeblockMatch = codeblockRegex.exec(modifiedFileContents))) {
-      let config: BlockOptions
       try {
-        const inputConfig: BlockInputOptions = JSON.parse(
-          codeblockMatch.groups.config
-        )
-        config = {
-          ...inputConfig,
-          type: BlockSourceType[inputConfig.type],
+        let inputConfig: BlockInputOptions
+        try {
+          inputConfig = JSON.parse(codeblockMatch.groups.config)
+        } catch (err) {
+          logger.error(`Error parsing config:\n${codeblockMatch.groups.config}`)
+          throw err
         }
-      } catch (err) {
-        logger.error(
-          `${fileName}: Error parsing config ${codeblockMatch.groups.config}`
-        )
-        throw err
-      }
 
-      const blockSourceTypes = {
-        command: 'command',
-        file: 'file',
-      }
+        const resolvedType = BlockSourceType[inputConfig.type]
 
-      const {
-        type: blockSourceType = BlockSourceType.file,
-        hideValue = false,
-        trim = true,
-        ignore = false,
-        environment = {},
-      } = config
+        const blockSourceTypes = {
+          command: 'command',
+          file: 'file',
+        }
 
-      if (ignore) {
-        blocksIgnored++
-        totalBlocks++
-        continue
-      }
+        if (inputConfig.type !== undefined && resolvedType === undefined) {
+          throw new Error(
+            `Unexpected "type" of "${
+              inputConfig.type
+            }". Valid types are ${Object.values(blockSourceTypes)
+              .map((s) => `"${s}"`)
+              .join(', ')}`
+          )
+        }
 
-      let { language, value } = config
+        const config: BlockOptions = {
+          ...inputConfig,
+          type: resolvedType,
+        }
 
-      if (!value) {
-        throw new Error(`${fileName}: All codeblocks must contain a "value"`)
-      }
+        const {
+          type: blockSourceType = BlockSourceType.file,
+          hideValue = false,
+          trim = true,
+          ignore = false,
+          environment = {},
+        } = config
 
-      const [originalBlock] = codeblockMatch
-      const startPragma = codeblockMatch.groups.start_pragma
-      const endPragma = codeblockMatch.groups.end_pragma
+        if (ignore) {
+          blocksIgnored++
+          totalBlocks++
+          continue
+        }
 
-      let out: string
-      switch (blockSourceType) {
-        case BlockSourceType.command: {
+        let { language, value } = config
+
+        if (!value) {
+          throw new Error('No "value" was provided.')
+        }
+
+        const [originalBlock] = codeblockMatch
+        const startPragma = codeblockMatch.groups.start_pragma
+        const endPragma = codeblockMatch.groups.end_pragma
+
+        let out: string
+
+        if (blockSourceType === BlockSourceType.command) {
           out = await new Promise((resolve, reject) => {
             exec(
               value,
@@ -136,70 +146,76 @@ const main = async (
               }
             )
           })
-          break
-        }
-        case BlockSourceType.file: {
+        } else {
+          // BlockSourceType.file
           const fileLocation = path.resolve(path.dirname(fileName), value)
           out = await fs.readFile(fileLocation, { encoding: 'utf-8' })
-
           if (!language) {
             language = path.extname(fileLocation).replace(/^\./, '')
           }
-
           value = path.relative(process.cwd(), fileLocation)
-
-          break
         }
-        default:
-          throw new Error(
-            `${fileName} contains unexpected codeblock type "${blockSourceType}". Valid types are ${Object.values(
-              blockSourceTypes
-            )
-              .map((s) => `"${s}"`)
-              .join(', ')}`
-          )
-      }
 
-      if (!language) {
-        language = 'bash'
-      }
+        if (!out || !out.trim()) {
+          throw new Error('No content was returned.')
+        }
 
-      // Code blocks can start with an arbitrary length, and must end with at least the same.
-      // This allows us to write ``` in our code blocks without inadvertently terminating them.
-      // https://github.github.com/gfm/#example-94
-      const codeblockFence = '~~~~~~~~~~'
+        if (!language) {
+          language = 'bash'
+        }
 
-      const prettierIgnore = '<!-- prettier-ignore -->'
+        // Code blocks can start with an arbitrary length, and must end with at least the same.
+        // This allows us to write ``` in our code blocks without inadvertently terminating them.
+        // https://github.github.com/gfm/#example-94
+        const codeblockFence = '~~~~~~~~~~'
 
-      if (trim) {
-        out = out.trim()
-      }
+        const prettierIgnore = '<!-- prettier-ignore -->'
 
-      const newBlock = `${startPragma}
+        if (trim) {
+          out = out.trim()
+        }
+
+        const newBlock = `${startPragma}
 ${prettierIgnore}
 ${codeblockFence}${language}${
-        hideValue
-          ? ''
-          : `\n${
-              blockSourceType === BlockSourceType.command ? '$' : 'File:'
-            } ${value}\n`
-      }
+          hideValue
+            ? ''
+            : `\n${
+                blockSourceType === BlockSourceType.command ? '$' : 'File:'
+              } ${value}\n`
+        }
 ${out}
 ${codeblockFence}
 
 ${endPragma}`
 
-      totalBlocks++
-      if (newBlock !== originalBlock) {
-        blocksChanged++
+        totalBlocks++
+        if (newBlock !== originalBlock) {
+          blocksChanged++
 
-        const { input, index } = codeblockMatch
-        const matchLength = codeblockMatch[0].length
+          const { input, index } = codeblockMatch
+          const matchLength = codeblockMatch[0].length
 
-        const pre = input.substring(0, index)
-        const post = input.substr(index + matchLength)
+          const pre = input.substring(0, index)
+          const post = input.substr(index + matchLength)
 
-        modifiedFileContents = pre + newBlock + post
+          modifiedFileContents = pre + newBlock + post
+        }
+      } catch (err) {
+        const lines = codeblockMatch.input
+          .slice(0, codeblockMatch.index)
+          .split('\n')
+        const lineNo = lines.length
+        const col = lines.pop().length
+
+        console.error(
+          `Error processing codeblock at "${path.join(
+            process.cwd(),
+            fileName
+          )}:${lineNo}:${col}":`
+        )
+
+        throw err
       }
     }
 
