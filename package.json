@@ -20,6 +20,7 @@
     "validate": "npm run lint && npm test && npm run build",
     "markdown-inject": "node dist './**/*.md'",
     "release": "npx standard-version --releaseCommitMessageFormat \"chore(release): {{currentTag}} [skip ci]\" --scripts.postchangelog \"npm run release:save\"",
+    "release:check": "node scripts/release check",
     "release:save": "node scripts/release save release/new-release.md",
     "release:post": "node scripts/release post release/new-release.md"
   },

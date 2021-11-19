@@ -37,8 +37,27 @@ jobs:
           path: './**/*'
           key: ${{ github.event.after }}
 
-  Deploy:
+  CheckRelease:
     needs: Validate
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Load Deployment
+        uses: actions/cache@v2
+        env:
+          cache-name: deployment-cache
+        with:
+          path: './**/*'
+          key: ${{ github.event.after }}
+
+      - name: Check PR Labels
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          npm run release:check
+
+  Deploy:
+    needs: CheckRelease
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}
     steps:
