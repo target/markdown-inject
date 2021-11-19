@@ -52,9 +52,8 @@
             run_id: GITHUB_RUN_ID,
           })
 
-          // Block the next (publish) job from running
-          const timeout = 10 * 60 * 1000 // 10 minutes
-          await new Promise((resolve) => setTimeout(resolve, timeout))
+          // Block the workflow permanently until it is shut down by GitHub
+          await new Promise(() => null)
         } catch (err) {
           if (err) {
             console.log('Error while cancelling workflow run')
