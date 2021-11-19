@@ -1,3 +1,7 @@
+# Temporary release files
+release/*
+!release/.gitkeep
+
 # Logs
 logs
 *.log
