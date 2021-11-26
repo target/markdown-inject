@@ -9,6 +9,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=12"
+  },
   "scripts": {
     "start": "npm run build -- -w",
     "prebuild": "npm run clean",
