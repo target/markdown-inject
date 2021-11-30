@@ -8,6 +8,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Set Up NodeJs
         uses: actions/setup-node@v2
@@ -36,8 +37,27 @@ jobs:
           path: './**/*'
           key: ${{ github.event.after }}
 
-  Deploy:
+  CheckRelease:
     needs: Validate
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Load Deployment
+        uses: actions/cache@v2
+        env:
+          cache-name: deployment-cache
+        with:
+          path: './**/*'
+          key: ${{ github.event.after }}
+
+      - name: Check PR Labels
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          npm run release:check
+
+  Deploy:
+    needs: CheckRelease
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/main' }}
     steps:
@@ -65,7 +85,7 @@ jobs:
 
       - name: Create Git Release
         run: |
-          npx standard-version --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          npm run release
 
       - name: Push Git Release
         run: |
@@ -81,6 +101,12 @@ jobs:
         id: publish
         run: |
           npm publish
+
+      - name: Publish Release Notes
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          npm run release:post
 
       - name: Revert Git Release
         if: failure() && steps.publish.outcome == 'failure'
