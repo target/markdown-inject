@@ -50,7 +50,7 @@ describe('CLI', () => {
 
       expect(injectMarkdown).not.toHaveBeenCalled()
       expect(console.error).toHaveBeenCalledWith(
-        "Options -a / -all and a globPattern ('./**/CHANGELOG.md') can not be provided together. Please select one or the other."
+        "Options -a / --all and a globPattern ('./**/CHANGELOG.md') can not be provided together. Please select one or the other."
       )
       expect(process.exit).toHaveBeenCalledWith(1)
     }
