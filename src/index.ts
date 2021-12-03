@@ -40,7 +40,7 @@ Examples:
   .action(async (globPattern, options) => {
     if (options.all && globPattern) {
       console.error(
-        `Options -a / -all and a globPattern ('${globPattern}') can not be provided together. Please select one or the other.`
+        `Options -a / --all and a globPattern ('${globPattern}') can not be provided together. Please select one or the other.`
       )
       return process.exit(1)
     }
