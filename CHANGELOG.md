@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/target/markdown-inject/compare/v1.1.2...v2.0.0) (2021-12-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **runtime:** Sets minimum node version of 12
+
+### Features
+
+* **CLI:** Adds -all flag to alias './**/*.md' ([be0db10](https://github.com/target/markdown-inject/commit/be0db10ce479983b3051cf9ca66423f868d9d489))
+
+
+* **runtime:** Sets minimum node version of 12 ([3c5902b](https://github.com/target/markdown-inject/commit/3c5902b7d952236cdec9f2c1a383de03b0ce1bac))
+
+### 1.1.2 (2021-11-26)
+
+### 1.1.1 (2021-11-19)
+
 ## [1.1.0](https://github.com/target/markdown-inject/compare/v1.0.1...v1.1.0) (2021-10-08)
 
 

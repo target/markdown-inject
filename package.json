@@ -1,6 +1,6 @@
 {
   "name": "markdown-inject",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Add file or command output to markdown documents.",
   "main": "dist/index.js",
   "bin": {
@@ -9,6 +9,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=12"
+  },
   "scripts": {
     "start": "npm run build -- -w",
     "prebuild": "npm run clean",
@@ -18,7 +21,11 @@
     "test": "jest",
     "prepare": "husky install",
     "validate": "npm run lint && npm test && npm run build",
-    "markdown-inject": "node dist './**/*.md'"
+    "markdown-inject": "node dist -a",
+    "release": "npx standard-version --releaseCommitMessageFormat \"chore(release): {{currentTag}} [skip ci]\" --scripts.postchangelog \"npm run release:save\"",
+    "release:check": "node scripts/release.mjs check",
+    "release:save": "node scripts/release.mjs save release/new-release.md",
+    "release:post": "node scripts/release.mjs post release/new-release.md"
   },
   "dependencies": {
     "chalk": "4.1.0",
@@ -27,10 +34,12 @@
     "globby": "11.0.4"
   },
   "devDependencies": {
+    "@octokit/rest": "18.12.0",
     "@types/commander": "2.12.2",
     "@types/fs-extra": "9.0.11",
     "@types/jest": "26.0.22",
     "@types/node": "15.12.2",
+    "@types/shell-quote": "1.7.1",
     "@typescript-eslint/eslint-plugin": "4.22.0",
     "@typescript-eslint/parser": "4.22.0",
     "eslint": "7.24.0",
@@ -39,7 +48,8 @@
     "husky": "6.0.0",
     "jest": "26.6.3",
     "prettier": "2.2.1",
-    "standard-version": "9.2.0",
+    "shell-quote": "1.7.3",
+    "standard-version": "9.3.2",
     "ts-jest": "26.5.5",
     "ts-node": "9.1.1",
     "typescript": "4.2.4"

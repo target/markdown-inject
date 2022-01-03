@@ -4,7 +4,9 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "resolveJsonModule": true,
-    "target": "ES5"
+    "lib": ["ES2019"],
+    "module": "commonjs",
+    "target": "ES2019"
   },
   "include": ["src/**/*"],
   "exclude": ["**/*.test.*"]
