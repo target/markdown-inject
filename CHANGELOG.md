@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/target/markdown-inject/compare/v2.0.0...v3.0.0) (2022-01-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* Throws an error when no output is emitted
+
+### Features
+
+* Throws an error when no output is emitted ([a9602ed](https://github.com/target/markdown-inject/commit/a9602ed8983e678a2751a22de3fdd3d7e17073e9))
+
 ## [2.0.0](https://github.com/target/markdown-inject/compare/v1.1.2...v2.0.0) (2021-12-03)
 
 
