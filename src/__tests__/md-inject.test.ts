@@ -93,7 +93,7 @@ describe('Markdown injection', () => {
 
     expect(Logger).toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalledWith(
-      'foo.md: Error parsing config {foo: bar}'
+      'Error parsing config:\n{foo: bar}'
     )
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -114,7 +114,8 @@ describe('Markdown injection', () => {
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'foo.md: All codeblocks must contain a "value"',
+        message:
+          'Unexpected "type" of "git". Valid types are "command", "file"',
       })
     )
     expect(process.exitCode).toBe(1)
@@ -399,6 +400,7 @@ console.log('baz')
         type: 'command',
         value: 'some arbitrary command',
       },
+      mockResponse: 'some arbitrary stdout',
     })
 
     await injectMarkdown()
@@ -414,6 +416,8 @@ console.log('baz')
       config: {
         value: 'bar.js',
       },
+      mockResponse:
+        'Weight lifting. Lawyer regulatory board. Pole vaulter’s nemesis',
     })
 
     await injectMarkdown()
@@ -431,6 +435,7 @@ console.log('baz')
         value: 'some arbitrary command',
         hideValue: true,
       },
+      mockResponse: 'some arbitrary stdout',
     })
 
     await injectMarkdown()
@@ -447,6 +452,7 @@ console.log('baz')
         value: 'bar.js',
         hideValue: true,
       },
+      mockResponse: 'Speakeasies',
     })
 
     await injectMarkdown()
@@ -463,6 +469,7 @@ console.log('baz')
         value: 'bar.js',
         language: 'coffeescript', // :shrug:
       },
+      mockResponse: 'Coffee bar?',
     })
 
     await injectMarkdown()
@@ -480,6 +487,7 @@ console.log('baz')
         value: 'npm view react-scripts --json',
         language: 'json',
       },
+      mockResponse: '{ "version": "17.x" }',
     })
 
     await injectMarkdown()
@@ -495,6 +503,7 @@ console.log('baz')
       config: {
         value: 'bar.sh',
       },
+      mockResponse: 'echo "bar"',
     })
 
     await injectMarkdown()
@@ -511,6 +520,7 @@ console.log('baz')
         type: 'command',
         value: 'some arbitrary command',
       },
+      mockResponse: 'some arbitrary stdout',
     })
 
     await injectMarkdown()
@@ -526,6 +536,7 @@ console.log('baz')
       config: {
         value: 'shell-scripts/foo',
       },
+      mockResponse: 'something',
     })
 
     await injectMarkdown()
@@ -582,6 +593,7 @@ echo "Hello World"
       config: {
         value: 'bar.js',
       },
+      mockResponse: 'module.exports = () => console.log("5:00")',
     })
 
     await injectMarkdown()
@@ -637,6 +649,7 @@ echo "Hello World"
       <!-- CODEBLOCK_END -->
       <!-- CODEBLOCK_END -->
 `,
+      mockResponse: 'console.log("👋")',
     })
 
     await injectMarkdown()
@@ -649,7 +662,7 @@ echo "Hello World"
 ~~~~~~~~~~js
 File: bar.js
 
-
+console.log("👋")
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END_NAMED -->`
@@ -896,6 +909,47 @@ console.log('Hello World')
     const [, execConfig] = exec.mock.calls[0]
 
     expect(execConfig.env.MY_SYS_ENV).toBe('e test')
+  })
+
+  it('throws if a file is empty (after trimming)', async () => {
+    mock({
+      config: {
+        value: 'foo.md',
+      },
+      mockResponse: `
+      
+      
+  `,
+    })
+
+    await injectMarkdown()
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('No content was returned'),
+      })
+    )
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('throws if a command returns no output (after trimming)', async () => {
+    mock({
+      config: {
+        type: 'command',
+        value: `echo ''`,
+      },
+      mockResponse: `
+`,
+    })
+
+    await injectMarkdown()
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('No content was returned'),
+      })
+    )
+    expect(process.exitCode).toBe(1)
   })
 })
 
