@@ -5,15 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.2.0
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Set Up NodeJs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3.5.1
         with:
-          node-version: '16.13.0'
+          node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install Dependencies
@@ -30,7 +30,7 @@ jobs:
 
       - name: Cache Deployment
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.11
         env:
           cache-name: deployment-cache
         with:

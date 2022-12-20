@@ -5,7 +5,7 @@ This project builds with node version:
 <!-- CODEBLOCK_START {"value": ".nvmrc", "hideValue": true} -->
 <!-- prettier-ignore -->
 ~~~~~~~~~~bash
-v16.13.0
+v16.19.0
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->
