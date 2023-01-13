@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.1](https://github.com/target/markdown-inject/compare/v3.1.0...v3.1.1) (2023-01-13)
+
+
+### Bug Fixes
+
+* **ci:** upgrade later workflow steps to same cache version ([659ede9](https://github.com/target/markdown-inject/commit/659ede94cb4a16f1a03d6c429df9625e17fd605a))
+
 ## [3.1.0](https://github.com/target/markdown-inject/compare/v3.0.4...v3.1.0) (2022-12-20)
 
 
