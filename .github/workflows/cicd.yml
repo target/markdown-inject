@@ -30,7 +30,7 @@ jobs:
 
       - name: Cache Deployment
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: actions/cache@v3.0.11
+        uses: actions/cache@v3.2.6
         env:
           cache-name: deployment-cache
         with:
@@ -43,7 +43,7 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     steps:
       - name: Load Deployment
-        uses: actions/cache@v3.0.11
+        uses: actions/cache@v3.2.6
         env:
           cache-name: deployment-cache
         with:
@@ -62,7 +62,7 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     steps:
       - name: Load Deployment
-        uses: actions/cache@v3.0.11
+        uses: actions/cache@v3.2.6
         env:
           cache-name: deployment-cache
         with:
