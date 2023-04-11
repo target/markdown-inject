@@ -63,5 +63,9 @@
     "inject",
     "markdown inject"
   ],
-  "author": ""
+  "author": "",
+  "overrides": {
+    "json5": "2.2.3",
+    "decode-uri-component": "0.2.1"
+  }
 }
