@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.1.4](https://github.com/target/markdown-inject/compare/v3.1.3...v3.1.4) (2023-04-12)
+
+
+### Bug Fixes
+
+* **devDependencies:** add overrides for deep jest@26 transient dependencies ([a40c75a](https://github.com/target/markdown-inject/commit/a40c75a3b18851fe90f58014b5317c1a404f86c7))
+
 ### [3.1.3](https://github.com/target/markdown-inject/compare/v3.1.2...v3.1.3) (2023-04-11)
 
 ### [3.1.2](https://github.com/target/markdown-inject/compare/v3.1.1...v3.1.2) (2023-03-06)
