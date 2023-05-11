@@ -1,6 +1,6 @@
 {
   "name": "markdown-inject",
-  "version": "3.1.4",
+  "version": "4.0.0",
   "description": "Add file or command output to markdown documents.",
   "main": "dist/index.js",
   "bin": {
