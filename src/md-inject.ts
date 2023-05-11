@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import { exec } from 'child_process'
 import Logger from './Logger'
+import envCi from 'env-ci'
 
 enum BlockSourceType {
   file = 'file',
@@ -47,6 +48,16 @@ const main = async (
   }
 ): Promise<void> => {
   const logger = new Logger(quiet)
+
+  const ciEnv = envCi()
+
+  if (ciEnv.isCi && 'isPr' in ciEnv && ciEnv.isPr) {
+    logger.warn(
+      'markdown-inject does not run during pull request builds. Exiting with no changes.'
+    )
+    return
+  }
+
   logger.group('Injecting Markdown Blocks')
 
   const markdownFiles = await glob(globPattern, {
@@ -273,12 +284,12 @@ const prepareEnvironment = (
   const systemEnvironment = useSystemEnvironment ? process.env : {}
   providedEnvironment = Object.entries(providedEnvironment)
     .map(([key, value]) => {
-      const valueEnvMatch = /^\$(\w+)$/.exec(value)
+      const valueEnvMatch = /^\$(\w+)$/.exec(value || '')
       if (valueEnvMatch) {
         const envKey = valueEnvMatch[1]
         value = process.env[envKey]
       }
-      return [key, value]
+      return [key, value] as const
     })
     .reduce((agg, [k, v]) => ({ ...agg, [k]: v }), {})
 

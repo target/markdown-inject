@@ -30,6 +30,8 @@ Optionally, wire up `markdown-inject` to a git pre-commit hook tool like [husky]
 
 ## Usage
 
+> Note: `markdown-inject` takes no action during pull request builds in CI.
+
 <!--
   CODEBLOCK_START
   {
