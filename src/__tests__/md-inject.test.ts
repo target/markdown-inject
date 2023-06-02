@@ -1,25 +1,46 @@
-let exec: jest.Mock
-let glob: jest.Mock
-let fs: {
+import injectMarkdown from '../md-inject'
+
+import { exec as baseExec } from 'child_process'
+import baseEnvCi from 'env-ci'
+import baseFs from 'fs-extra'
+import baseGlob from 'globby'
+
+jest.mock('child_process')
+const exec: jest.Mock = jest.mocked(baseExec)
+
+jest.mock('env-ci')
+const envCi: jest.Mock = jest.mocked(baseEnvCi)
+
+const logger = Object.fromEntries(
+  Object.entries(console).map(([consoleProperty, consolePropertyValue]) => [
+    consoleProperty,
+    typeof consolePropertyValue === 'function'
+      ? jest.fn()
+      : consolePropertyValue,
+  ])
+)
+jest.mock('../Logger', () => ({
+  __esModule: true,
+  default: class {
+    constructor() {
+      return logger
+    }
+  },
+}))
+
+const glob: jest.Mock = jest.mocked(baseGlob)
+jest.mock('globby')
+
+const fs: {
   readFile: jest.Mock
   writeFile: jest.Mock
-}
-let Logger: jest.Mock
-let logger: {
-  error: jest.Mock
-}
+} = jest.mocked(baseFs)
+jest.mock('fs-extra')
 
-let injectMarkdown: (args?: any) => Promise<void>
 const originalProcessEnv = process.env
 
 describe('Markdown injection', () => {
   beforeEach(async () => {
-    jest.resetModules()
-
-    injectMarkdown = (await import('../md-inject')).default
-
-    exec = ((await import('child_process')).exec as unknown) as typeof exec
-    jest.mock('child_process')
     exec.mockImplementation((...args) => {
       const cb = args.pop()
       const err: any = null
@@ -27,19 +48,42 @@ describe('Markdown injection', () => {
       cb(err, stdout)
     })
 
-    glob = ((await import('globby')).default as unknown) as typeof glob
-    jest.mock('globby')
-    glob.mockResolvedValue([])
-
-    fs = ((await (await import('fs-extra')).default) as unknown) as typeof fs
-    jest.mock('fs-extra')
-
-    Logger = ((await import('../Logger')).default as unknown) as typeof Logger
-    jest.mock('../Logger')
-    logger = new Logger()
-    Logger.mockImplementation(() => logger)
+    envCi.mockImplementation(() => ({
+      isCi: false,
+      isPr: false,
+    }))
 
     process.env = originalProcessEnv
+  })
+
+  it('warns and exits with no action on pull request', async () => {
+    envCi.mockImplementation(() => ({
+      isCi: true,
+      isPr: true,
+    }))
+
+    await injectMarkdown()
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('not run during pull')
+    )
+    // Exit code is not non-0
+    expect([null, undefined, 0]).toContain(process.exitCode)
+    expect(glob).not.toHaveBeenCalled()
+  })
+
+  it('does not warn / exit early in CI on non-PR builds', async () => {
+    envCi.mockImplementation(() => ({
+      isCi: true,
+      isPr: false,
+    }))
+
+    await injectMarkdown()
+
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('not run during pull')
+    )
+    expect(glob).toHaveBeenCalled()
   })
 
   it('collects all in-repo markdown files', async () => {
@@ -91,7 +135,6 @@ describe('Markdown injection', () => {
 
     await injectMarkdown()
 
-    expect(Logger).toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalledWith(
       'Error parsing config:\n{foo: bar}'
     )
@@ -845,7 +888,7 @@ console.log('Hello World')
       followSymbolicLinks: true,
       globPattern: '**/*.md',
       quiet: false,
-      systemEnvironment: false,
+      useSystemEnvironment: false,
     })
 
     const [, execConfig] = exec.mock.calls[0]

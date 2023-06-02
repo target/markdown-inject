@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/target/markdown-inject/compare/v3.1.4...v4.0.0) (2023-05-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* Exits with no action when called during a pull request build in CI
+
+### Features
+
+* Exits with no action when called during a pull request build in CI ([3f07562](https://github.com/target/markdown-inject/commit/3f07562f5b1f09203944c304a7339d5caae6af3e))
+
 ### [3.1.4](https://github.com/target/markdown-inject/compare/v3.1.3...v3.1.4) (2023-04-12)
 
 

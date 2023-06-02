@@ -1,29 +1,26 @@
 import shellQuote from 'shell-quote'
+import injectMarkdown from '../md-inject'
 
-let injectMarkdown: jest.Mock
 const baseProcess = process
-const baseConsole = console
+
+jest.mock('../md-inject')
+jest.spyOn(console, 'error')
+jest.spyOn(process.stdout, 'write')
 
 describe('CLI', () => {
-  beforeEach(() => {
-    jest.resetModules()
-
-    jest.clearAllMocks()
-    injectMarkdown = require('../md-inject').default
-    jest.mock('../md-inject')
-
+  beforeEach(async () => {
     /* eslint-disable-next-line */
     /* @ts-ignore */
     process.exit = jest.fn()
-    process.stdout.write = jest.fn()
   })
+
   afterEach(() => {
     process = baseProcess
-    console = baseConsole
   })
 
   it('returns help text when no glob pattern is passed', async () => {
     await invokeCli('markdown-inject')
+
     expect(process.stdout.write).toHaveBeenCalledWith(
       expect.stringMatching('Usage: markdown-inject')
     )
@@ -68,5 +65,8 @@ describe('CLI', () => {
 const invokeCli = async (args: string) => {
   const [node] = process.argv
   process.argv = [node, ...(shellQuote.parse(args) as string[])]
-  await import('../index')
+
+  jest.isolateModules(() => {
+    require('../index')
+  })
 }
