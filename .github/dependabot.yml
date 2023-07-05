@@ -125,6 +125,11 @@ updates:
       timezone: "Asia/Kolkata"
     allow:
       - dependency-type: "direct"
+    groups:
+      eslint-and-prettier:
+        patterns:
+          - "*eslint*"
+          - "*prettier*"
 
   - package-ecosystem: "nuget"
     directory: "/"
