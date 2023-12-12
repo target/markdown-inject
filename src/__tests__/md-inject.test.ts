@@ -140,7 +140,9 @@ describe('Markdown injection', () => {
     )
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('Unexpected token'),
+        message: expect.stringMatching(
+          /Unexpected token|Expected property name/
+        ),
       })
     )
     expect(process.exitCode).toBe(1)
@@ -274,6 +276,9 @@ Foo
     Foo
   <!-- CODEBLOCK_END -->`,
     ],
+    [
+      `{/* CODEBLOCK_START {"type": "command", "value": "some arbitrary command"} */} Foo {/* CODEBLOCK_END */}`,
+    ],
   ])('handles wonky formatting', async (markdownContent) => {
     glob.mockResolvedValue(['foo.md'])
     fs.readFile.mockResolvedValue(markdownContent)
@@ -310,6 +315,30 @@ The output of some arbitrary command
 
 <!-- CODEBLOCK_END -->`
     expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+  })
+
+  it('writes to the markdown document (command) even though bad syntax', async () => {
+    mock({
+      config: {
+        type: 'command',
+        value: 'some arbitrary command',
+      },
+      mockResponse: 'The output of some arbitrary command',
+    })
+
+    await injectMarkdown()
+
+    const outFile = `
+{/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} -->
+<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ some arbitrary command
+
+The output of some arbitrary command
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END */}`
+    expect(fs.writeFile).toHaveBeenCalled()
   })
 
   it('writes to the markdown document (file)', async () => {
@@ -688,7 +717,7 @@ echo "Hello World"
       },
       blockContents: `
       <!-- CODEBLOCK_END -->
-      <!-- CODEBLOCK_END -->
+      {/* CODEBLOCK_END */}
       <!-- CODEBLOCK_END -->
       <!-- CODEBLOCK_END -->
 `,
@@ -792,6 +821,15 @@ console.log('Hello World')
   }
 -->
 <!-- CODEBLOCK_END -->
+
+{/*
+  CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "npm view foo"
+  }
+*/}
+{/* CODEBLOCK_END */}
 
 # Bar Package
 

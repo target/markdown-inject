@@ -76,23 +76,51 @@ const main = async (
 
     let modifiedFileContents = originalFileContents
 
-    let codeblockMatch
+    let codeblockMatch: RegExpExecArray
     let blocksChanged = 0
     let blocksIgnored = 0
     let totalBlocks = 0
 
+    const comment = {
+      html: {
+        start: '<!-{2,}',
+        end: '-{2,}>',
+      },
+      mdx: {
+        start: '\\{\\s*/\\*',
+        end: '\\*/\\s*\\}',
+      },
+    } as const
     const codeblockRegex = new RegExp(
-      `(?<start_pragma><!--\\s*${blockPrefix}_START(?<name_ext>\\w*)\\s+(?<config>\\{(?:.|\\n)+?\\})\\s*-->)(?:.|\\s)*?(?<end_pragma><!--\\s*${blockPrefix}_END\\k<name_ext>\\s*-->)`,
-      'g'
+      Object.entries(comment)
+        .map(
+          ([commentType, { start: commentStart, end: commentEnd }]) =>
+            `(?<${commentType}_start_pragma>${commentStart}\\s*${blockPrefix}_START(?<${commentType}_name_ext>\\w*)\\s+(?<${commentType}_config>\\{(?:.|\\n)+?\\})\\s*${commentEnd}).*?(?<${commentType}_end_pragma>${commentStart}\\s*${blockPrefix}_END\\k<${commentType}_name_ext>\\s*${commentEnd})`
+        )
+        .join('|'),
+      'gs'
     )
 
     while ((codeblockMatch = codeblockRegex.exec(modifiedFileContents))) {
+      const matchGroups = Object.fromEntries(
+        Object.entries(codeblockMatch.groups)
+          .filter(([groupName]) =>
+            groupName.startsWith(
+              codeblockMatch.groups.html_config ? 'html_' : 'mdx_'
+            )
+          )
+          .map(([groupName, groupValue]) => [
+            groupName.replace(/^(html|mdx)_/, ''),
+            groupValue,
+          ])
+      )
+      console.log(matchGroups)
       try {
         let inputConfig: BlockInputOptions
         try {
-          inputConfig = JSON.parse(codeblockMatch.groups.config)
+          inputConfig = JSON.parse(matchGroups.config)
         } catch (err) {
-          logger.error(`Error parsing config:\n${codeblockMatch.groups.config}`)
+          logger.error(`Error parsing config:\n${matchGroups.config}`)
           throw err
         }
 
@@ -139,8 +167,8 @@ const main = async (
         }
 
         const [originalBlock] = codeblockMatch
-        const startPragma = codeblockMatch.groups.start_pragma
-        const endPragma = codeblockMatch.groups.end_pragma
+        const startPragma = matchGroups.start_pragma
+        const endPragma = matchGroups.end_pragma
 
         let out: string
 
