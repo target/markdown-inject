@@ -320,43 +320,30 @@ The output of some arbitrary command
   })
 
   it('does not write to the markdown document (command) because of bad syntax', async () => {
-    const outFile = `
+    const inFile = `
 <!-- CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
-<!-- prettier-ignore -->
+
+<!-- CODEBLOCK_END */}`
+
+    const inFileName = `<!-- prettier-ignore -->
 ~~~~~~~~~~bash
 $ some arbitrary command
 
 The output of some arbitrary command
-~~~~~~~~~~
+~~~~~~~~~~`
 
-<!-- CODEBLOCK_END */}`
+    glob.mockResolvedValue([inFileName])
 
-    const mock = ({
-      config,
-      mockResponse = '',
-    }: {
-      name?: string
-      mockFileName?: string
-      config: any
-      includePrettierIgnore?: boolean
-      blockContents?: string
-      mockResponse?: string
-    }) => {
-      glob.mockResolvedValue([outFile])
-
-      fs.readFile.mockImplementation(async (fileName) => {
-        if (fileName === outFile) {
-          return outFile
-        }
-
-        if (config.type !== 'command' && fileName.includes(config.value)) {
-          return mockResponse
-        }
-        throw new Error('Unexpected file name passed')
-      })
-    }
+    fs.readFile.mockImplementation(async (fileName) => {
+      if (fileName === inFileName) {
+        return inFile
+      }
+      throw new Error('Unexpected file name passed')
+    })
 
     await injectMarkdown()
+
+    expect(fs.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
 
     expect(fs.writeFile).not.toHaveBeenCalled()
   })
