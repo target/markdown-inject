@@ -53,6 +53,8 @@ describe('Markdown injection', () => {
       isPr: false,
     }))
 
+    jest.clearAllMocks()
+
     process.env = originalProcessEnv
   })
 
@@ -317,19 +319,9 @@ The output of some arbitrary command
     expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
   })
 
-  it('writes to the markdown document (command) even though bad syntax', async () => {
-    mock({
-      config: {
-        type: 'command',
-        value: 'some arbitrary command',
-      },
-      mockResponse: 'The output of some arbitrary command',
-    })
-
-    await injectMarkdown()
-
+  it('does not write to the markdown document (command) because of bad syntax', async () => {
     const outFile = `
-{/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} -->
+<!-- CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
 <!-- prettier-ignore -->
 ~~~~~~~~~~bash
 $ some arbitrary command
@@ -338,7 +330,35 @@ The output of some arbitrary command
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END */}`
-    expect(fs.writeFile).toHaveBeenCalled()
+
+    const mock = ({
+      config,
+      mockResponse = '',
+    }: {
+      name?: string
+      mockFileName?: string
+      config: any
+      includePrettierIgnore?: boolean
+      blockContents?: string
+      mockResponse?: string
+    }) => {
+      glob.mockResolvedValue([outFile])
+
+      fs.readFile.mockImplementation(async (fileName) => {
+        if (fileName === outFile) {
+          return outFile
+        }
+
+        if (config.type !== 'command' && fileName.includes(config.value)) {
+          return mockResponse
+        }
+        throw new Error('Unexpected file name passed')
+      })
+    }
+
+    await injectMarkdown()
+
+    expect(fs.writeFile).not.toHaveBeenCalled()
   })
 
   it('writes to the markdown document (file)', async () => {
