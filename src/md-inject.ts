@@ -114,7 +114,6 @@ const main = async (
             groupValue,
           ])
       )
-      console.log(matchGroups)
       try {
         let inputConfig: BlockInputOptions
         try {

@@ -14,7 +14,7 @@ module.exports = {
   ],
   rules: {
     // VS Code linting will not respect the `.prettierrc` options unless injected here:
-    'prettier/prettier': ['warn', prettierrc],
+    'prettier/prettier': ['error', prettierrc],
     '@typescript-eslint/no-var-requires': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
   },

@@ -67,9 +67,9 @@ Options:
 
 <!-- CODEBLOCK_END -->
 
-`markdown-inject` expands a given glob for markdown files. Then it discovers the below `CODEBLOCK` HTML comments within each markdown file, performs the appropriate action (in this case, reading another local file), and writes content back into the markdown file:
+`markdown-inject` expands a given glob for markdown files. Then it discovers the below `CODEBLOCK` HTML or MDX comments within each markdown file, performs the appropriate action (in this case, reading another local file), and writes content back into the markdown file:
 
-{/* CODEBLOCK_START_USAGE {"ignore": true} */}
+<!-- CODEBLOCK_START_USAGE {"ignore": true} -->
 
 ```
 <!-- CODEBLOCK_START {"value": ".nvmrc"} -->
@@ -79,7 +79,7 @@ Options:
 <!-- CODEBLOCK_END_USAGE -->
 
 ```
-{/* CODEBLOCK_START {"value": ".nvmrc"} -->
+<!-- CODEBLOCK_START {"value": ".nvmrc"} -->
 <!-- prettier-ignore -->
 ~~~~~~~~~~bash
 File: .nvmrc
