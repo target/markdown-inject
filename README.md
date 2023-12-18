@@ -67,7 +67,7 @@ Options:
 
 <!-- CODEBLOCK_END -->
 
-`markdown-inject` expands a given glob for markdown files. Then it discovers the below `CODEBLOCK` HTML or MDX comments within each markdown file, performs the appropriate action (in this case, reading another local file), and writes content back into the markdown file:
+`markdown-inject` expands a given glob for markdown files. Then it discovers the below `CODEBLOCK` HTML or MDX (as shown in [CONTRIBUTING.mdx](./CONTRIBUTING.mdx)) comments within each markdown file, performs the appropriate action (in this case, reading another local file), and writes content back into the markdown file:
 
 <!-- CODEBLOCK_START_USAGE {"ignore": true} -->
 
