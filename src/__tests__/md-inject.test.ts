@@ -1084,14 +1084,13 @@ const mock = ({
   glob.mockResolvedValue([mockFileName])
 
   fs.readFile.mockImplementation(async (fileName) => {
-    if (fileName === mockFileName && fileName.includes('mdx')) {
-      return `
-{/* CODEBLOCK_START${name} ${JSON.stringify(config)} */}
-${includePrettierIgnore ? '<!-- prettier-ignore -->\n' : ''}${blockContents}
-{/* CODEBLOCK_END${name} */}`
-    }
     if (fileName === mockFileName) {
-      return `
+      return fileName.includes('mdx')
+        ? `
+{/* CODEBLOCK_START${name} ${JSON.stringify(config)} */}
+${includePrettierIgnore ? '{/* prettier-ignore */}\n' : ''}${blockContents}
+{/* CODEBLOCK_END${name} */}`
+        : `
 <!-- CODEBLOCK_START${name} ${JSON.stringify(config)} -->
 ${includePrettierIgnore ? '<!-- prettier-ignore -->\n' : ''}${blockContents}
 <!-- CODEBLOCK_END${name} -->`
