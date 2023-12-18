@@ -319,6 +319,30 @@ The output of some arbitrary command
     expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
   })
 
+  it('writes to the markdown document (command) with mdx syntax', async () => {
+    mock({
+      config: {
+        type: 'command',
+        value: 'some arbitrary command',
+      },
+      mockResponse: 'The output of some arbitrary command',
+    })
+
+    await injectMarkdown()
+
+    const outFile = `
+{/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
+{/* prettier-ignore */}
+~~~~~~~~~~bash
+$ some arbitrary command
+
+The output of some arbitrary command
+~~~~~~~~~~
+
+{/* CODEBLOCK_END */}`
+    expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+  })
+
   it('does not write to the markdown document (command) because of bad syntax', async () => {
     const inFile = `
 <!-- CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
