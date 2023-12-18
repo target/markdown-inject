@@ -320,7 +320,7 @@ The output of some arbitrary command
   })
 
   it('writes to the markdown document (command) with mdx syntax', async () => {
-    mock({
+    mocktwo({
       config: {
         type: 'command',
         value: 'some arbitrary command',
@@ -332,7 +332,7 @@ The output of some arbitrary command
 
     const outFile = `
 {/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
-{/* prettier-ignore */}
+<!-- prettier-ignore -->
 ~~~~~~~~~~bash
 $ some arbitrary command
 
@@ -340,7 +340,7 @@ The output of some arbitrary command
 ~~~~~~~~~~
 
 {/* CODEBLOCK_END */}`
-    expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+    expect(fs.writeFile).toHaveBeenCalledWith('foo.mdx', outFile)
   })
 
   it('does not write to the markdown document (command) because of bad syntax', async () => {
@@ -1088,6 +1088,45 @@ const mock = ({
 <!-- CODEBLOCK_START${name} ${JSON.stringify(config)} -->
 ${includePrettierIgnore ? '<!-- prettier-ignore -->\n' : ''}${blockContents}
 <!-- CODEBLOCK_END${name} -->`
+    }
+
+    if (config.type !== 'command' && fileName.includes(config.value)) {
+      return mockResponse
+    }
+    throw new Error('Unexpected file name passed')
+  })
+
+  if (config.type === 'command') {
+    exec.mockImplementation((...args) => {
+      const cb = args.pop()
+      cb(null, mockResponse)
+    })
+  }
+}
+
+const mocktwo = ({
+  name = '',
+  mockFileName = 'foo.mdx',
+  config,
+  includePrettierIgnore = true,
+  blockContents = '',
+  mockResponse = '',
+}: {
+  name?: string
+  mockFileName?: string
+  config: any
+  includePrettierIgnore?: boolean
+  blockContents?: string
+  mockResponse?: string
+}) => {
+  glob.mockResolvedValue([mockFileName])
+
+  fs.readFile.mockImplementation(async (fileName) => {
+    if (fileName === mockFileName) {
+      return `
+{/* CODEBLOCK_START${name} ${JSON.stringify(config)} */}
+${includePrettierIgnore ? '<!-- prettier-ignore -->\n' : ''}${blockContents}
+{/* CODEBLOCK_END${name} */}`
     }
 
     if (config.type !== 'command' && fileName.includes(config.value)) {
