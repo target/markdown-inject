@@ -207,7 +207,10 @@ const main = async (
         // https://github.github.com/gfm/#example-94
         const codeblockFence = '~~~~~~~~~~'
 
-        const prettierIgnore = '<!-- prettier-ignore -->'
+        const checkFileName = fileName
+        const prettierIgnore = checkFileName.includes('mdx')
+          ? '{/* prettier-ignore */}'
+          : '<!-- prettier-ignore -->'
 
         if (trim) {
           out = out.trim()

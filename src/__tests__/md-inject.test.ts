@@ -333,7 +333,7 @@ The output of some arbitrary command
 
     const outFile = `
 {/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
-<!-- prettier-ignore -->
+{/* prettier-ignore */}
 ~~~~~~~~~~bash
 $ some arbitrary command
 
@@ -342,6 +342,35 @@ The output of some arbitrary command
 
 {/* CODEBLOCK_END */}`
     expect(fs.writeFile).toHaveBeenCalledWith('foo.mdx', outFile)
+  })
+
+  it('fails to write to the markdown document (command) with mixed syntax', async () => {
+    const inFile = `
+{/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
+
+{/* CODEBLOCK_END */}`
+
+    const inFileName = `<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ some arbitrary command
+
+The output of some arbitrary command
+~~~~~~~~~~`
+
+    glob.mockResolvedValue([inFileName])
+
+    fs.readFile.mockImplementation(async (fileName) => {
+      if (fileName === inFileName) {
+        return inFile
+      }
+      throw new Error('Unexpected file name passed')
+    })
+
+    await injectMarkdown()
+
+    expect(fs.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
+
+    expect(fs.writeFile).not.toHaveBeenCalled()
   })
 
   it('does not write to the markdown document (command) because of bad syntax', async () => {
