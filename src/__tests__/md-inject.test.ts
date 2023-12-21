@@ -53,6 +53,8 @@ describe('Markdown injection', () => {
       isPr: false,
     }))
 
+    jest.clearAllMocks()
+
     process.env = originalProcessEnv
   })
 
@@ -140,7 +142,9 @@ describe('Markdown injection', () => {
     )
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('Unexpected token'),
+        message: expect.stringMatching(
+          /Unexpected token|Expected property name/
+        ),
       })
     )
     expect(process.exitCode).toBe(1)
@@ -274,6 +278,9 @@ Foo
     Foo
   <!-- CODEBLOCK_END -->`,
     ],
+    [
+      `{/* CODEBLOCK_START {"type": "command", "value": "some arbitrary command"} */} Foo {/* CODEBLOCK_END */}`,
+    ],
   ])('handles wonky formatting', async (markdownContent) => {
     glob.mockResolvedValue(['foo.md'])
     fs.readFile.mockResolvedValue(markdownContent)
@@ -310,6 +317,89 @@ The output of some arbitrary command
 
 <!-- CODEBLOCK_END -->`
     expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+  })
+
+  it('writes to the markdown document (command) with mdx syntax', async () => {
+    mock({
+      mockFileName: 'foo.mdx',
+      config: {
+        type: 'command',
+        value: 'some arbitrary command',
+      },
+      mockResponse: 'The output of some arbitrary command',
+    })
+
+    await injectMarkdown()
+
+    const outFile = `
+{/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
+{/* prettier-ignore */}
+~~~~~~~~~~bash
+$ some arbitrary command
+
+The output of some arbitrary command
+~~~~~~~~~~
+
+{/* CODEBLOCK_END */}`
+    expect(fs.writeFile).toHaveBeenCalledWith('foo.mdx', outFile)
+  })
+
+  it('fails to write to the markdown document (command) with mixed syntax', async () => {
+    const inFile = `
+{/* CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
+
+{/* CODEBLOCK_END */}`
+
+    const inFileName = `<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ some arbitrary command
+
+The output of some arbitrary command
+~~~~~~~~~~`
+
+    glob.mockResolvedValue([inFileName])
+
+    fs.readFile.mockImplementation(async (fileName) => {
+      if (fileName === inFileName) {
+        return inFile
+      }
+      throw new Error('Unexpected file name passed')
+    })
+
+    await injectMarkdown()
+
+    expect(fs.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
+
+    expect(fs.writeFile).not.toHaveBeenCalled()
+  })
+
+  it('does not write to the markdown document (command) because of bad syntax', async () => {
+    const inFile = `
+<!-- CODEBLOCK_START {"type":"command","value":"some arbitrary command"} */}
+
+<!-- CODEBLOCK_END */}`
+
+    const inFileName = `<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ some arbitrary command
+
+The output of some arbitrary command
+~~~~~~~~~~`
+
+    glob.mockResolvedValue([inFileName])
+
+    fs.readFile.mockImplementation(async (fileName) => {
+      if (fileName === inFileName) {
+        return inFile
+      }
+      throw new Error('Unexpected file name passed')
+    })
+
+    await injectMarkdown()
+
+    expect(fs.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
+
+    expect(fs.writeFile).not.toHaveBeenCalled()
   })
 
   it('writes to the markdown document (file)', async () => {
@@ -688,7 +778,7 @@ echo "Hello World"
       },
       blockContents: `
       <!-- CODEBLOCK_END -->
-      <!-- CODEBLOCK_END -->
+      {/* CODEBLOCK_END */}
       <!-- CODEBLOCK_END -->
       <!-- CODEBLOCK_END -->
 `,
@@ -792,6 +882,15 @@ console.log('Hello World')
   }
 -->
 <!-- CODEBLOCK_END -->
+
+{/*
+  CODEBLOCK_START
+  {
+    "type": "command",
+    "value": "npm view foo"
+  }
+*/}
+{/* CODEBLOCK_END */}
 
 # Bar Package
 
@@ -1015,7 +1114,12 @@ const mock = ({
 
   fs.readFile.mockImplementation(async (fileName) => {
     if (fileName === mockFileName) {
-      return `
+      return fileName.includes('mdx')
+        ? `
+{/* CODEBLOCK_START${name} ${JSON.stringify(config)} */}
+${includePrettierIgnore ? '{/* prettier-ignore */}\n' : ''}${blockContents}
+{/* CODEBLOCK_END${name} */}`
+        : `
 <!-- CODEBLOCK_START${name} ${JSON.stringify(config)} -->
 ${includePrettierIgnore ? '<!-- prettier-ignore -->\n' : ''}${blockContents}
 <!-- CODEBLOCK_END${name} -->`

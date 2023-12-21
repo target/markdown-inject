@@ -67,7 +67,7 @@ Options:
 
 <!-- CODEBLOCK_END -->
 
-`markdown-inject` expands a given glob for markdown files. Then it discovers the below `CODEBLOCK` HTML comments within each markdown file, performs the appropriate action (in this case, reading another local file), and writes content back into the markdown file:
+`markdown-inject` expands a given glob for markdown files. Then it discovers the below `CODEBLOCK` HTML or MDX (as shown in [CONTRIBUTING.mdx](./CONTRIBUTING.mdx)) comments within each markdown file, performs the appropriate action (in this case, reading another local file), and writes content back into the markdown file:
 
 <!-- CODEBLOCK_START_USAGE {"ignore": true} -->
 
@@ -84,7 +84,7 @@ Options:
 ~~~~~~~~~~bash
 File: .nvmrc
 
-v16.19.0
+v20.10.0
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->
