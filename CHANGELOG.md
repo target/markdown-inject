@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0](https://github.com/target/markdown-inject/compare/v4.0.3...v4.1.0) (2023-12-21)
+
+
+### Features
+
+* add mdx support ([d09edae](https://github.com/target/markdown-inject/commit/d09edae7cd5d2a8e9abec1de5a3847c833aee8d3))
+
 ### [4.0.3](https://github.com/target/markdown-inject/compare/v4.0.2...v4.0.3) (2023-12-06)
 
 ### [4.0.2](https://github.com/target/markdown-inject/compare/v4.0.1...v4.0.2) (2023-12-01)
