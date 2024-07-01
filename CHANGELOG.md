@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.1.6](https://github.com/target/markdown-inject/compare/v4.1.5...v4.1.6) (2024-07-01)
+
 ### [4.1.5](https://github.com/target/markdown-inject/compare/v4.1.4...v4.1.5) (2024-07-01)
 
 ### [4.1.4](https://github.com/target/markdown-inject/compare/v4.1.3...v4.1.4) (2024-07-01)
