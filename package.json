@@ -1,6 +1,6 @@
 {
   "name": "markdown-inject",
-  "version": "4.1.1",
+  "version": "4.1.7",
   "description": "Add file or command output to markdown documents.",
   "main": "dist/index.js",
   "bin": {
@@ -54,7 +54,7 @@
     "standard-version": "9.3.2",
     "ts-jest": "29.1.0",
     "ts-node": "9.1.1",
-    "typescript": "5.0.4"
+    "typescript": "5.5.2"
   },
   "repository": {
     "type": "git",
