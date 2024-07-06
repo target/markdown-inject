@@ -35,7 +35,7 @@
     "globby": "11.0.4"
   },
   "devDependencies": {
-    "@octokit/rest": "18.12.0",
+    "@octokit/rest": "21.0.0",
     "@types/commander": "2.12.2",
     "@types/env-ci": "3.1.1",
     "@types/fs-extra": "9.0.11",
