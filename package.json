@@ -32,7 +32,7 @@
     "commander": "7.2.0",
     "env-ci": "7.3.0",
     "fs-extra": "9.1.0",
-    "globby": "11.0.4"
+    "globby": "14.0.2"
   },
   "devDependencies": {
     "@octokit/rest": "18.12.0",
