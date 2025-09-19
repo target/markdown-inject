@@ -1,5 +1,7 @@
 # markdown-inject
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/target/markdown-inject/badge)](https://scorecard.dev/viewer/?uri=github.com/target/markdown-inject)
+
 Add file or command output to markdown documents.
 
 <img src="./demo.gif" alt="Functionality Demo" height="600" />
