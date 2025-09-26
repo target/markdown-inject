@@ -10,20 +10,14 @@ Add file or command output to markdown documents.
 
 Download and invoke in one command:
 
-```
+```sh
 npx markdown-inject
 ```
 
-Local npm installation:
+Local installation:
 
-```
+```sh
 npm install markdown-inject --save-dev
-```
-
-or with Yarn:
-
-```
-yarn add markdown-inject --dev
 ```
 
 Optionally, wire up `markdown-inject` to a git pre-commit hook tool like [husky](https://github.com/typicode/husky) to automatically update markdown injection as part of your workflow.
@@ -36,7 +30,7 @@ Optionally, wire up `markdown-inject` to a git pre-commit hook tool like [husky]
   CODEBLOCK_START
   {
     "type": "command",
-    "value": "npm run --silent markdown-inject -- --help",
+    "value": "pnpm run --silent markdown-inject -- --help",
     "hideValue": true
   }
 -->

@@ -10,23 +10,28 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Set Up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
       - name: Set Up NodeJs
         uses: actions/setup-node@v4.0.2
         with:
           node-version-file: '.nvmrc'
-          cache: npm
+          cache: 'pnpm'
 
       - name: Install Dependencies
-        run: npm ci
+        run: pnpm install
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Test
-        run: npm test
+        run: pnpm run test
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Cache Deployment
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -54,7 +59,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          npm run release:check
+          pnpm run release:check
 
   Deploy:
     needs: CheckRelease
@@ -85,7 +90,7 @@ jobs:
 
       - name: Create Git Release
         run: |
-          npm run release
+          pnpm run release
 
       - name: Push Git Release
         run: |
@@ -95,18 +100,18 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          npm set "//registry.npmjs.org/:_authToken=$NPM_TOKEN"
+          pnpm config set "//registry.npmjs.org/:_authToken=$NPM_TOKEN"
 
-      - name: Publish NPM Package
+      - name: Publish Package
         id: publish
         run: |
-          npm publish
+          pnpm publish
 
       - name: Publish Release Notes
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          npm run release:post
+          pnpm run release:post
 
       - name: Revert Git Release
         if: failure() && steps.publish.outcome == 'failure'
