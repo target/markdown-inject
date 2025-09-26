@@ -39,8 +39,11 @@ jest.mock('fs-extra')
 
 const originalProcessEnv = process.env
 
+let initialProcessExitCode: number | undefined
+
 describe('Markdown injection', () => {
   beforeEach(async () => {
+    initialProcessExitCode = process.exitCode
     exec.mockImplementation((...args) => {
       const cb = args.pop()
       const err: any = null
@@ -56,6 +59,10 @@ describe('Markdown injection', () => {
     jest.clearAllMocks()
 
     process.env = originalProcessEnv
+  })
+
+  afterEach(() => {
+    process.exitCode = initialProcessExitCode
   })
 
   it('warns and exits with no action on pull request', async () => {

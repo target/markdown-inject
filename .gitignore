@@ -51,7 +51,7 @@ typings/
 # TypeScript cache
 *.tsbuildinfo
 
-# Optional npm cache directory
+# Optional module cache directory
 .npm
 
 # Optional eslint cache
@@ -66,7 +66,7 @@ typings/
 # Optional REPL history
 .node_repl_history
 
-# Output of 'npm pack'
+# Output of 'pnpm pack'
 *.tgz
 
 # Yarn Integrity file

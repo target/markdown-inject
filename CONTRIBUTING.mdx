@@ -13,19 +13,21 @@ v20.10.0
 After cloning the repository, install dependencies and build the project:
 
 ```
-npm ci
+pnpm install
 ```
 
 Build the library and watch for changes:
 
 ```
-npm start
+pnpm run start
 ```
 
 Link your local copy:
 
+{/* TODO: pnpm link? */}
+
 ```
-npm link
+pnpm link
 ```
 
 `markdown-inject` commands in any terminal will now run using your local copy.
@@ -35,13 +37,13 @@ npm link
 This app ships with a local suite of [jest](https://jestjs.io/) tests, [eslint](https://eslint.org/) + [prettier](https://prettier.io/) configurations for code consistency and formatting, and [TypeScript](https://www.typescriptlang.org/) type validation. Each of these features can be validated using...
 
 ```bash
-npm test
-npm run lint
-npm run build
+pnpm run test
+pnpm run lint
+pnpm run build
 ```
 
 A `validate` utility script chains these calls together, and is called on every commit.
 
 ```bash
-npm run validate
+pnpm run validate
 ```

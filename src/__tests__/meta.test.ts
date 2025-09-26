@@ -1,14 +1,21 @@
 import fs from 'fs'
 import path from 'path'
 
-describe('package-lock.json', () => {
+const lockFileNames: string[] = [
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+]
+
+describe.each(lockFileNames)('%s', (lockFileName) => {
   it('does not contain private registry references', () => {
-    const lockFile = fs.readFileSync(
-      path.join(process.cwd(), 'package-lock.json'),
-      {
-        encoding: 'utf-8',
-      }
-    )
-    expect(lockFile.indexOf('artifactory')).toBe(-1)
+    const lockFilePath = path.join(process.cwd(), lockFileName)
+    if (!fs.existsSync(lockFilePath)) {
+      return
+    }
+    const lockFileContents = fs.readFileSync(lockFilePath, {
+      encoding: 'utf-8',
+    })
+    expect(lockFileContents.indexOf('artifactory')).toBe(-1)
   })
 })
