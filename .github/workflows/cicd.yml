@@ -16,7 +16,7 @@ jobs:
           run_install: false
 
       - name: Set Up NodeJs
-        uses: actions/setup-node@v4.0.2
+        uses: actions/setup-node@v5.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
