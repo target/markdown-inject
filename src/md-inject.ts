@@ -1,6 +1,5 @@
-import glob from 'globby'
-import fs from 'fs-extra'
-import path from 'path'
+import { glob, readFile, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { exec } from 'child_process'
 import Logger from './Logger'
 import envCi from 'env-ci'
@@ -26,7 +25,7 @@ interface BlockInputOptions extends Omit<BlockOptions, 'type'> {
 
 interface ReplaceOptions {
   blockPrefix: string
-  followSymbolicLinks: boolean
+  followSymlinks: boolean
   globPattern: string
   quiet: boolean
   useSystemEnvironment: boolean
@@ -35,13 +34,13 @@ interface ReplaceOptions {
 const main = async (
   {
     blockPrefix,
-    followSymbolicLinks,
+    followSymlinks,
     globPattern,
     quiet,
     useSystemEnvironment,
   }: ReplaceOptions = {
     blockPrefix: 'CODEBLOCK',
-    followSymbolicLinks: true,
+    followSymlinks: true,
     globPattern: '**/*.md',
     quiet: false,
     useSystemEnvironment: true,
@@ -60,15 +59,24 @@ const main = async (
 
   logger.group('Injecting Markdown Blocks')
 
-  const markdownFiles = await glob(globPattern, {
-    followSymbolicLinks,
-    gitignore: true,
-  })
+  const markdownFiles: string[] = []
+  const gitignorePatterns = await readGitignorePatterns()
+  // `followSymlinks` is a valid Node runtime option not yet reflected in @types/node
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const globOptions: any = {
+    cwd: process.cwd(),
+    withFileTypes: false,
+    followSymlinks,
+    exclude: (entry: string) => isGitignored(entry, gitignorePatterns),
+  }
+  for await (const file of glob(globPattern, globOptions) as AsyncIterable<string>) {
+    markdownFiles.push(file)
+  }
 
   const processMarkdownFile = async (fileName: string) => {
     let originalFileContents
     try {
-      originalFileContents = await fs.readFile(fileName, { encoding: 'utf-8' })
+      originalFileContents = await readFile(fileName, { encoding: 'utf-8' })
     } catch (err) {
       logger.error(`${fileName}: Error reading file`)
       throw err
@@ -187,7 +195,7 @@ const main = async (
         } else {
           // BlockSourceType.file
           const fileLocation = path.resolve(path.dirname(fileName), value)
-          out = await fs.readFile(fileLocation, { encoding: 'utf-8' })
+          out = await readFile(fileLocation, { encoding: 'utf-8' })
           if (!language) {
             language = path.extname(fileLocation).replace(/^\./, '')
           }
@@ -261,7 +269,7 @@ ${endPragma}`
     }
 
     if (modifiedFileContents !== originalFileContents) {
-      await fs.writeFile(fileName, modifiedFileContents)
+      await writeFile(fileName, modifiedFileContents)
       logger.log(
         `${fileName}: ${blocksChanged} of ${totalBlocks} blocks changed (${blocksIgnored} ignored)`
       )
@@ -329,5 +337,30 @@ const prepareEnvironment = (
     ...providedEnvironment,
   }
 }
+
+const readGitignorePatterns = async (): Promise<string[]> => {
+  try {
+    const contents = await readFile(path.join(process.cwd(), '.gitignore'), {
+      encoding: 'utf-8',
+    })
+    return contents
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#'))
+  } catch {
+    return []
+  }
+}
+
+const isGitignored = (entry: string, patterns: string[]): boolean => {
+  const parts = entry.split(path.sep)
+  return patterns.some((pattern) => {
+    // Strip leading slash (root-anchored patterns are treated the same here)
+    const p = pattern.replace(/^\//, '')
+    // Match any path segment or the full relative path
+    return parts.some((part) => part === p) || entry === p || entry.startsWith(p + path.sep)
+  })
+}
+
 
 export default main

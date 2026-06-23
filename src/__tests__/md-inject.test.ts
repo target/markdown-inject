@@ -2,8 +2,7 @@ import injectMarkdown from '../md-inject'
 
 import { exec as baseExec } from 'child_process'
 import baseEnvCi from 'env-ci'
-import baseFs from 'fs-extra'
-import baseGlob from 'globby'
+import * as baseFsPromises from 'node:fs/promises'
 
 jest.mock('child_process')
 const exec: jest.Mock = jest.mocked(baseExec)
@@ -28,14 +27,26 @@ jest.mock('../Logger', () => ({
   },
 }))
 
-const glob: jest.Mock = jest.mocked(baseGlob)
-jest.mock('globby')
+jest.mock('node:fs/promises', () => ({
+  glob: jest.fn(),
+  readFile: jest.fn(),
+  writeFile: jest.fn(),
+}))
 
-const fs: {
+const fsPromises = jest.mocked(baseFsPromises) as {
+  glob: jest.Mock
   readFile: jest.Mock
   writeFile: jest.Mock
-} = jest.mocked(baseFs)
-jest.mock('fs-extra')
+}
+
+// Helper: make glob return an async iterable over the given array
+const mockGlob = (files: string[]) => {
+  fsPromises.glob.mockReturnValue(
+    (async function* () {
+      yield* files
+    })()
+  )
+}
 
 const originalProcessEnv = process.env
 
@@ -55,6 +66,10 @@ describe('Markdown injection', () => {
 
     jest.clearAllMocks()
 
+    // Default: glob yields nothing, readFile rejects (no .gitignore → returns [])
+    mockGlob([])
+    fsPromises.readFile.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+
     process.env = originalProcessEnv
   })
 
@@ -71,7 +86,7 @@ describe('Markdown injection', () => {
     )
     // Exit code is not non-0
     expect([null, undefined, 0]).toContain(process.exitCode)
-    expect(glob).not.toHaveBeenCalled()
+    expect(fsPromises.glob).not.toHaveBeenCalled()
   })
 
   it('does not warn / exit early in CI on non-PR builds', async () => {
@@ -85,21 +100,21 @@ describe('Markdown injection', () => {
     expect(logger.warn).not.toHaveBeenCalledWith(
       expect.stringContaining('not run during pull')
     )
-    expect(glob).toHaveBeenCalled()
+    expect(fsPromises.glob).toHaveBeenCalled()
   })
 
   it('collects all in-repo markdown files', async () => {
     await injectMarkdown()
 
-    expect(glob).toHaveBeenCalledWith(
+    expect(fsPromises.glob).toHaveBeenCalledWith(
       '**/*.md',
-      expect.objectContaining({ gitignore: true })
+      expect.objectContaining({ followSymlinks: true })
     )
   })
 
   it('throws gracefully when an error occurs while reading the file', async () => {
-    fs.readFile.mockRejectedValue('some error')
-    glob.mockResolvedValue(['foo.md'])
+    fsPromises.readFile.mockRejectedValue('some error')
+    mockGlob(['foo.md'])
 
     await injectMarkdown()
 
@@ -109,29 +124,29 @@ describe('Markdown injection', () => {
   })
 
   it('does nothing', async () => {
-    glob.mockResolvedValue(['foo.md'])
-    fs.readFile.mockResolvedValue('# Foo')
+    mockGlob(['foo.md'])
+    fsPromises.readFile.mockResolvedValue('# Foo')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).not.toHaveBeenCalled()
+    expect(fsPromises.writeFile).not.toHaveBeenCalled()
   })
 
   it('reads all files', async () => {
-    glob.mockResolvedValue(['foo.md', 'bar.md', 'baz.md', 'qux.md'])
-    fs.readFile.mockResolvedValue('# Foo')
+    mockGlob(['foo.md', 'bar.md', 'baz.md', 'qux.md'])
+    fsPromises.readFile.mockResolvedValue('# Foo')
 
     await injectMarkdown()
 
-    expect(fs.readFile).toHaveBeenCalledWith('foo.md', { encoding: 'utf-8' })
-    expect(fs.readFile).toHaveBeenCalledWith('bar.md', { encoding: 'utf-8' })
-    expect(fs.readFile).toHaveBeenCalledWith('baz.md', { encoding: 'utf-8' })
-    expect(fs.readFile).toHaveBeenCalledWith('qux.md', { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith('foo.md', { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith('bar.md', { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith('baz.md', { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith('qux.md', { encoding: 'utf-8' })
   })
 
   it('throws gracefully when the config is malformed', async () => {
-    glob.mockResolvedValue(['foo.md'])
-    fs.readFile.mockResolvedValue(
+    mockGlob(['foo.md'])
+    fsPromises.readFile.mockResolvedValue(
       '<!-- CODEBLOCK_START {foo: bar} --><!-- CODEBLOCK_END -->'
     )
 
@@ -196,8 +211,8 @@ describe('Markdown injection', () => {
 
     await injectMarkdown()
 
-    expect(fs.readFile).toHaveBeenCalledWith('foo.md', { encoding: 'utf-8' })
-    expect(fs.readFile).toHaveBeenCalledWith(
+    expect(fsPromises.readFile).toHaveBeenCalledWith('foo.md', { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith(
       expect.stringContaining('bar.js'),
       { encoding: 'utf-8' }
     )
@@ -213,8 +228,8 @@ describe('Markdown injection', () => {
 
     await injectMarkdown()
 
-    expect(fs.readFile).toHaveBeenCalledWith('foo.md', { encoding: 'utf-8' })
-    expect(fs.readFile).toHaveBeenCalledWith(
+    expect(fsPromises.readFile).toHaveBeenCalledWith('foo.md', { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith(
       expect.stringContaining('bar.js'),
       { encoding: 'utf-8' }
     )
@@ -282,8 +297,8 @@ Foo
       `{/* CODEBLOCK_START {"type": "command", "value": "some arbitrary command"} */} Foo {/* CODEBLOCK_END */}`,
     ],
   ])('handles wonky formatting', async (markdownContent) => {
-    glob.mockResolvedValue(['foo.md'])
-    fs.readFile.mockResolvedValue(markdownContent)
+    mockGlob(['foo.md'])
+    fsPromises.readFile.mockResolvedValue(markdownContent)
 
     await injectMarkdown()
 
@@ -316,7 +331,7 @@ The output of some arbitrary command
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->`
-    expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+    expect(fsPromises.writeFile).toHaveBeenCalledWith('foo.md', outFile)
   })
 
   it('writes to the markdown document (command) with mdx syntax', async () => {
@@ -341,7 +356,7 @@ The output of some arbitrary command
 ~~~~~~~~~~
 
 {/* CODEBLOCK_END */}`
-    expect(fs.writeFile).toHaveBeenCalledWith('foo.mdx', outFile)
+    expect(fsPromises.writeFile).toHaveBeenCalledWith('foo.mdx', outFile)
   })
 
   it('fails to write to the markdown document (command) with mixed syntax', async () => {
@@ -357,9 +372,9 @@ $ some arbitrary command
 The output of some arbitrary command
 ~~~~~~~~~~`
 
-    glob.mockResolvedValue([inFileName])
+    mockGlob([inFileName])
 
-    fs.readFile.mockImplementation(async (fileName) => {
+    fsPromises.readFile.mockImplementation(async (fileName) => {
       if (fileName === inFileName) {
         return inFile
       }
@@ -368,9 +383,9 @@ The output of some arbitrary command
 
     await injectMarkdown()
 
-    expect(fs.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
 
-    expect(fs.writeFile).not.toHaveBeenCalled()
+    expect(fsPromises.writeFile).not.toHaveBeenCalled()
   })
 
   it('does not write to the markdown document (command) because of bad syntax', async () => {
@@ -386,9 +401,9 @@ $ some arbitrary command
 The output of some arbitrary command
 ~~~~~~~~~~`
 
-    glob.mockResolvedValue([inFileName])
+    mockGlob([inFileName])
 
-    fs.readFile.mockImplementation(async (fileName) => {
+    fsPromises.readFile.mockImplementation(async (fileName) => {
       if (fileName === inFileName) {
         return inFile
       }
@@ -397,9 +412,9 @@ The output of some arbitrary command
 
     await injectMarkdown()
 
-    expect(fs.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
+    expect(fsPromises.readFile).toHaveBeenCalledWith(inFileName, { encoding: 'utf-8' })
 
-    expect(fs.writeFile).not.toHaveBeenCalled()
+    expect(fsPromises.writeFile).not.toHaveBeenCalled()
   })
 
   it('writes to the markdown document (file)', async () => {
@@ -423,7 +438,7 @@ console.log('baz')
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->`
-    expect(fs.writeFile).toHaveBeenCalledWith('foo.md', outFile)
+    expect(fsPromises.writeFile).toHaveBeenCalledWith('foo.md', outFile)
   })
 
   it('trims whitespace (command)', async () => {
@@ -443,7 +458,7 @@ The output of some arbitrary command
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(
         /[^\n]\n{2}The output of some arbitrary command\n[^\n]/
@@ -471,7 +486,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/[^\n]\n{2}console\.log\('baz'\)\n{1}[^\n]/)
     )
@@ -494,7 +509,7 @@ The output of some arbitrary command
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/\n{3,}The output of some arbitrary command\n{2,}/)
     )
@@ -521,7 +536,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/\n{4,}console\.log\('baz'\)\n{6,}/)
     )
@@ -538,7 +553,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringContaining('$ some arbitrary command')
     )
@@ -555,7 +570,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringContaining('File: bar.js')
     )
@@ -573,7 +588,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.not.stringContaining('$ some arbitrary command')
     )
@@ -590,7 +605,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.not.stringMatching('File: bar.js')
     )
@@ -607,7 +622,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/^~{10}coffeescript$/m)
     )
@@ -625,7 +640,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/^~{10}json$/m)
     )
@@ -641,7 +656,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/^~{10}sh$/m)
     )
@@ -658,7 +673,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/^~{10}bash$/m)
     )
@@ -674,7 +689,7 @@ console.log('baz')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/^~{10}bash$/m)
     )
@@ -696,7 +711,7 @@ echo "Hello America"
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching('Hello World')
     )
@@ -718,7 +733,7 @@ echo "Hello World"
 
     await injectMarkdown()
 
-    expect(fs.writeFile).not.toHaveBeenCalled()
+    expect(fsPromises.writeFile).not.toHaveBeenCalled()
   })
 
   it('prevents prettier auto-formatting of code block and interior syntax', async () => {
@@ -731,7 +746,7 @@ echo "Hello World"
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/<!-- prettier-ignore -->\n~{10}/)
     )
@@ -748,7 +763,7 @@ echo "Hello World"
 
     await injectMarkdown()
 
-    expect(fs.writeFile).not.toHaveBeenCalled()
+    expect(fsPromises.writeFile).not.toHaveBeenCalled()
   })
 
   it('ignores nested blocks', async () => {
@@ -767,7 +782,7 @@ echo "Hello World"
 
     await injectMarkdown()
 
-    expect(fs.writeFile).not.toHaveBeenCalled()
+    expect(fsPromises.writeFile).not.toHaveBeenCalled()
   })
 
   it('supports block naming', async () => {
@@ -787,7 +802,7 @@ echo "Hello World"
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       `
 <!-- CODEBLOCK_START_NAMED {"value":"bar.js"} -->
@@ -803,9 +818,9 @@ console.log("👋")
   })
 
   it('performs surgical replacement', async () => {
-    glob.mockResolvedValue(['foo.md'])
+    mockGlob(['foo.md'])
 
-    fs.readFile.mockImplementation(async (fileName) => {
+    fsPromises.readFile.mockImplementation(async (fileName) => {
       if (fileName === 'foo.md') {
         return `
 <!-- CODEBLOCK_START_META {"ignore": true} -->
@@ -837,7 +852,7 @@ console.log("👋")
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       `
 <!-- CODEBLOCK_START_META {"ignore": true} -->
@@ -869,8 +884,8 @@ console.log('Hello World')
   })
 
   it('handles multiple blocks in one file', async () => {
-    glob.mockResolvedValue(['foo.md'])
-    fs.readFile.mockImplementation(
+    mockGlob(['foo.md'])
+    fsPromises.readFile.mockImplementation(
       async () => `
 # Foo Package
 
@@ -909,7 +924,7 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    expect(fs.writeFile).toHaveBeenCalledWith(
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
       'foo.md',
       expect.stringMatching(/OUT: npm view foo(.|\n)*OUT: npm view bar/)
     )
@@ -984,7 +999,7 @@ console.log('Hello World')
 
     await injectMarkdown({
       blockPrefix: 'CODEBLOCK',
-      followSymbolicLinks: true,
+      followSymlinks: true,
       globPattern: '**/*.md',
       quiet: false,
       useSystemEnvironment: false,
@@ -1110,9 +1125,9 @@ const mock = ({
   blockContents?: string
   mockResponse?: string
 }) => {
-  glob.mockResolvedValue([mockFileName])
+  mockGlob([mockFileName])
 
-  fs.readFile.mockImplementation(async (fileName) => {
+  fsPromises.readFile.mockImplementation(async (fileName) => {
     if (fileName === mockFileName) {
       return fileName.includes('mdx')
         ? `

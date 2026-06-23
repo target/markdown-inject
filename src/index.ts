@@ -55,7 +55,7 @@ Examples:
 
     await injectMarkdown({
       blockPrefix: options.blockPrefix,
-      followSymbolicLinks: options.followSymbolicLinks,
+      followSymlinks: options.followSymbolicLinks,
       globPattern,
       quiet: options.quiet,
       useSystemEnvironment: options.systemEnvironment,
