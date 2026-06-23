@@ -1,14 +1,14 @@
-import fs from 'fs'
-import path from 'path'
+import { describe, it } from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
 
 describe('package-lock.json', () => {
   it('does not contain private registry references', () => {
     const lockFile = fs.readFileSync(
       path.join(process.cwd(), 'package-lock.json'),
-      {
-        encoding: 'utf-8',
-      }
+      { encoding: 'utf-8' }
     )
-    expect(lockFile.indexOf('artifactory')).toBe(-1)
+    assert.equal(lockFile.indexOf('artifactory'), -1)
   })
 })
