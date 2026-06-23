@@ -1,7 +1,7 @@
 import { glob, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { exec } from 'child_process'
-import Logger from './Logger'
+import Logger from './Logger.js'
 import envCi from 'env-ci'
 
 enum BlockSourceType {
