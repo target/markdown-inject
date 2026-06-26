@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander'
-import injectMarkdown from './md-inject'
+import injectMarkdown from './md-inject.js'
+import { createRequire } from 'node:module'
 
-const { name, version } = require('../package.json')
+const { name, version } = createRequire(import.meta.url)('../package.json')
 
 const allGlobPattern = './**/*.md'
 
@@ -55,7 +56,7 @@ Examples:
 
     await injectMarkdown({
       blockPrefix: options.blockPrefix,
-      followSymbolicLinks: options.followSymbolicLinks,
+      followSymlinks: options.followSymbolicLinks,
       globPattern,
       quiet: options.quiet,
       useSystemEnvironment: options.systemEnvironment,
