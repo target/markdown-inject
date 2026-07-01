@@ -40,7 +40,7 @@ export function objectContaining(subset: Record<string, unknown>): Matcher {
     test: (actual) => {
       if (typeof actual !== 'object' || actual === null) return false
       return Object.entries(subset).every(([k, v]) =>
-        matchArg(v, (actual as Record<string, unknown>)[k])
+        matchArg(v, (actual as Record<string, unknown>)[k]),
       )
     },
     description: `objectContaining(${JSON.stringify(subset)})`,
@@ -56,7 +56,9 @@ export function anything(): Matcher {
 }
 
 function isMatcher(v: unknown): v is Matcher {
-  return typeof v === 'object' && v !== null && (v as Matcher)._isMatcher === true
+  return (
+    typeof v === 'object' && v !== null && (v as Matcher)._isMatcher === true
+  )
 }
 
 function matchArg(expected: unknown, actual: unknown): boolean {
@@ -79,19 +81,23 @@ function callMatchesArgs(callArgs: unknown[], expected: unknown[]): boolean {
 // ---------------------------------------------------------------------------
 
 export function assertCalledWith(fn: MockFn, ...expected: unknown[]): void {
-  const matched = fn.mock.calls.some((c) => callMatchesArgs(c.arguments, expected))
+  const matched = fn.mock.calls.some((c) =>
+    callMatchesArgs(c.arguments, expected),
+  )
   assert.ok(
     matched,
     `Expected mock to have been called with ${JSON.stringify(expected)}\n` +
-      `Actual calls: ${JSON.stringify(fn.mock.calls.map((c) => c.arguments))}`
+      `Actual calls: ${JSON.stringify(fn.mock.calls.map((c) => c.arguments))}`,
   )
 }
 
 export function assertNotCalledWith(fn: MockFn, ...expected: unknown[]): void {
-  const matched = fn.mock.calls.some((c) => callMatchesArgs(c.arguments, expected))
+  const matched = fn.mock.calls.some((c) =>
+    callMatchesArgs(c.arguments, expected),
+  )
   assert.ok(
     !matched,
-    `Expected mock NOT to have been called with ${JSON.stringify(expected)}`
+    `Expected mock NOT to have been called with ${JSON.stringify(expected)}`,
   )
 }
 
@@ -103,7 +109,7 @@ export function assertNotCalled(fn: MockFn): void {
   assert.equal(
     fn.mock.calls.length,
     0,
-    `Expected mock NOT to have been called, but was called ${fn.mock.calls.length} times`
+    `Expected mock NOT to have been called, but was called ${fn.mock.calls.length} times`,
   )
 }
 
@@ -111,7 +117,7 @@ export function assertCalledTimes(fn: MockFn, times: number): void {
   assert.equal(
     fn.mock.calls.length,
     times,
-    `Expected mock to have been called ${times} times, but was called ${fn.mock.calls.length} times`
+    `Expected mock to have been called ${times} times, but was called ${fn.mock.calls.length} times`,
   )
 }
 
@@ -122,7 +128,7 @@ export function assertCalledTimes(fn: MockFn, times: number): void {
 export function assertStringContains(actual: string, expected: string): void {
   assert.ok(
     actual.includes(expected),
-    `Expected ${JSON.stringify(actual)} to contain ${JSON.stringify(expected)}`
+    `Expected ${JSON.stringify(actual)} to contain ${JSON.stringify(expected)}`,
   )
 }
 
@@ -130,10 +136,13 @@ export function assertStringMatches(actual: string, pattern: RegExp): void {
   assert.match(actual, pattern)
 }
 
-export function assertStringNotContains(actual: string, expected: string): void {
+export function assertStringNotContains(
+  actual: string,
+  expected: string,
+): void {
   assert.ok(
     !actual.includes(expected),
-    `Expected ${JSON.stringify(actual)} NOT to contain ${JSON.stringify(expected)}`
+    `Expected ${JSON.stringify(actual)} NOT to contain ${JSON.stringify(expected)}`,
   )
 }
 

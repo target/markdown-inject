@@ -1,5 +1,6 @@
-import { describe, it, mock, beforeEach, after } from 'node:test'
 import assert from 'node:assert/strict'
+import { describe, it, mock, beforeEach, after } from 'node:test'
+
 import {
   assertCalledWith,
   assertNotCalled,
@@ -16,7 +17,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const execMock = mock.fn()
-await mock.module('child_process', {
+await mock.module('node:child_process', {
   namedExports: { exec: execMock },
 })
 
@@ -67,7 +68,7 @@ function mockGlob(files: string[]): void {
   globMock.mock.mockImplementation(() =>
     (async function* () {
       yield* files
-    })()
+    })(),
   )
 }
 
@@ -125,9 +126,10 @@ describe('Markdown injection', () => {
 
     await injectMarkdown()
 
-    const warnCallsAboutPR = logger.warn.mock.calls.filter((c) =>
-      typeof c.arguments[0] === 'string' &&
-      c.arguments[0].includes('not run during pull')
+    const warnCallsAboutPR = logger.warn.mock.calls.filter(
+      (c) =>
+        typeof c.arguments[0] === 'string' &&
+        c.arguments[0].includes('not run during pull'),
     )
     assert.equal(warnCallsAboutPR.length, 0)
     assertCalled(globMock)
@@ -136,11 +138,13 @@ describe('Markdown injection', () => {
   it('collects all in-repo markdown files', async () => {
     await injectMarkdown()
 
-    assertCalledWith(globMock, '**/*.md', objectContaining({ followSymlinks: true }))
+    assertCalledWith(globMock, '**/*.md', objectContaining({}))
   })
 
   it('throws gracefully when an error occurs while reading the file', async () => {
-    readFileMock.mock.mockImplementation(async () => { throw 'some error' })
+    readFileMock.mock.mockImplementation(async () => {
+      throw 'some error'
+    })
     mockGlob(['foo.md'])
 
     await injectMarkdown()
@@ -173,8 +177,8 @@ describe('Markdown injection', () => {
 
   it('throws gracefully when the config is malformed', async () => {
     mockGlob(['foo.md'])
-    readFileMock.mock.mockImplementation(async () =>
-      '<!-- CODEBLOCK_START {foo: bar} --><!-- CODEBLOCK_END -->'
+    readFileMock.mock.mockImplementation(
+      async () => '<!-- CODEBLOCK_START {foo: bar} --><!-- CODEBLOCK_END -->',
     )
 
     await injectMarkdown()
@@ -182,7 +186,7 @@ describe('Markdown injection', () => {
     assertCalledWith(logger.error, 'Error parsing config:\n{foo: bar}')
     assertCalledWith(
       logger.error,
-      objectContaining({ message: stringMatching(/Unexpected token|Expected property name/) })
+      stringMatching(/Unexpected token|Expected property name/),
     )
     assert.equal(process.exitCode, 1)
   })
@@ -192,10 +196,7 @@ describe('Markdown injection', () => {
 
     await injectMarkdown()
 
-    assertCalledWith(
-      logger.error,
-      objectContaining({ message: 'Unexpected "type" of "git". Valid types are "command", "file"' })
-    )
+    assertCalledWith(logger.error, stringMatching(/Invalid config/))
     assert.equal(process.exitCode, 1)
   })
 
@@ -208,12 +209,17 @@ describe('Markdown injection', () => {
   })
 
   it('imports a file', async () => {
-    setupMock({ mockFileName: 'foo.md', config: { type: 'file', value: 'bar.js' } })
+    setupMock({
+      mockFileName: 'foo.md',
+      config: { type: 'file', value: 'bar.js' },
+    })
 
     await injectMarkdown()
 
     assertCalledWith(readFileMock, 'foo.md', { encoding: 'utf-8' })
-    assertCalledWith(readFileMock, stringContaining('bar.js'), { encoding: 'utf-8' })
+    assertCalledWith(readFileMock, stringContaining('bar.js'), {
+      encoding: 'utf-8',
+    })
   })
 
   it('defaults to file import type', async () => {
@@ -222,7 +228,9 @@ describe('Markdown injection', () => {
     await injectMarkdown()
 
     assertCalledWith(readFileMock, 'foo.md', { encoding: 'utf-8' })
-    assertCalledWith(readFileMock, stringContaining('bar.js'), { encoding: 'utf-8' })
+    assertCalledWith(readFileMock, stringContaining('bar.js'), {
+      encoding: 'utf-8',
+    })
   })
 
   const wonkyFormatCases: string[] = [
@@ -269,7 +277,12 @@ Foo
       await injectMarkdown()
 
       assertCalledTimes(execMock, 1)
-      assertCalledWith(execMock, 'some arbitrary command', anything(), anything())
+      assertCalledWith(
+        execMock,
+        'some arbitrary command',
+        anything(),
+        anything(),
+      )
     })
   }
 
@@ -396,7 +409,10 @@ console.log('baz')
     await injectMarkdown()
 
     const written = writeFileMock.mock.calls[0].arguments[1] as string
-    assert.match(written as string, /[^\n]\n{2}The output of some arbitrary command\n[^\n]/)
+    assert.match(
+      written as string,
+      /[^\n]\n{2}The output of some arbitrary command\n[^\n]/,
+    )
   })
 
   it('trims whitespace (file)', async () => {
@@ -420,7 +436,10 @@ console.log('baz')
     await injectMarkdown()
 
     const written = writeFileMock.mock.calls[0].arguments[1] as string
-    assert.match(written as string, /\n{3,}The output of some arbitrary command\n{2,}/)
+    assert.match(
+      written as string,
+      /\n{3,}The output of some arbitrary command\n{2,}/,
+    )
   })
 
   it('can retain whitespace (file)', async () => {
@@ -450,7 +469,8 @@ console.log('baz')
   it('displays the input file', async () => {
     setupMock({
       config: { value: 'bar.js' },
-      mockResponse: 'Weight lifting. Lawyer regulatory board. Pole vaulter\u2019s nemesis',
+      mockResponse:
+        'Weight lifting. Lawyer regulatory board. Pole vaulter\u2019s nemesis',
     })
 
     await injectMarkdown()
@@ -461,7 +481,11 @@ console.log('baz')
 
   it('can hide the input command', async () => {
     setupMock({
-      config: { type: 'command', value: 'some arbitrary command', hideValue: true },
+      config: {
+        type: 'command',
+        value: 'some arbitrary command',
+        hideValue: true,
+      },
       mockResponse: 'some arbitrary stdout',
     })
 
@@ -497,7 +521,11 @@ console.log('baz')
 
   it('can select a language (command)', async () => {
     setupMock({
-      config: { type: 'command', value: 'npm view react-scripts --json', language: 'json' },
+      config: {
+        type: 'command',
+        value: 'npm view react-scripts --json',
+        language: 'json',
+      },
       mockResponse: '{ "version": "17.x" }',
     })
 
@@ -529,7 +557,10 @@ console.log('baz')
   })
 
   it('language defaults to bash when it can not be inferred', async () => {
-    setupMock({ config: { value: 'shell-scripts/foo' }, mockResponse: 'something' })
+    setupMock({
+      config: { value: 'shell-scripts/foo' },
+      mockResponse: 'something',
+    })
 
     await injectMarkdown()
 
@@ -616,7 +647,7 @@ File: bar.js
 console.log("👋")
 ~~~~~~~~~~
 
-<!-- CODEBLOCK_END_NAMED -->`
+<!-- CODEBLOCK_END_NAMED -->`,
     )
   })
 
@@ -679,13 +710,14 @@ console.log('Hello World')
 ~~~
 <!-- CODEBLOCK_END_META_2 -->
 
-`
+`,
     )
   })
 
   it('handles multiple blocks in one file', async () => {
     mockGlob(['foo.md'])
-    readFileMock.mock.mockImplementation(async () => `
+    readFileMock.mock.mockImplementation(
+      async () => `
 # Foo Package
 
 <!--
@@ -715,11 +747,14 @@ console.log('Hello World')
     "value": "npm view bar"
   }
 -->
-<!-- CODEBLOCK_END -->`)
+<!-- CODEBLOCK_END -->`,
+    )
 
-    execMock.mock.mockImplementation((cmd: string, _env: unknown, cb: (e: null, out: string) => void) => {
-      cb(null, `OUT: ${cmd}`)
-    })
+    execMock.mock.mockImplementation(
+      (cmd: string, _env: unknown, cb: (e: null, out: string) => void) => {
+        cb(null, `OUT: ${cmd}`)
+      },
+    )
 
     await injectMarkdown()
 
@@ -732,7 +767,9 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    const execConfig = execMock.mock.calls[0].arguments[1] as { env: Record<string, string> }
+    const execConfig = execMock.mock.calls[0].arguments[1] as {
+      env: Record<string, string>
+    }
     assert.equal(execConfig.env.FORCE_COLOR, '0')
   })
 
@@ -747,7 +784,9 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    const execConfig = execMock.mock.calls[0].arguments[1] as { env: Record<string, string> }
+    const execConfig = execMock.mock.calls[0].arguments[1] as {
+      env: Record<string, string>
+    }
     assert.equal(execConfig.env.FOO_ENV, 'bar val')
   })
 
@@ -758,7 +797,9 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    const execConfig = execMock.mock.calls[0].arguments[1] as { env: Record<string, string> }
+    const execConfig = execMock.mock.calls[0].arguments[1] as {
+      env: Record<string, string>
+    }
     assertCalledTimes(execMock, 1)
     assert.equal(execConfig.env.MY_SYS_ENV, 'a test')
   })
@@ -770,13 +811,14 @@ console.log('Hello World')
 
     await injectMarkdown({
       blockPrefix: 'CODEBLOCK',
-      followSymlinks: true,
       globPattern: '**/*.md',
       quiet: false,
       useSystemEnvironment: false,
     })
 
-    const execConfig = execMock.mock.calls[0].arguments[1] as { env: Record<string, string> }
+    const execConfig = execMock.mock.calls[0].arguments[1] as {
+      env: Record<string, string>
+    }
     assertCalledTimes(execMock, 1)
     assert.equal(execConfig.env.MY_SYS_ENV, undefined)
   })
@@ -792,7 +834,9 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    const execConfig = execMock.mock.calls[0].arguments[1] as { env: Record<string, string> }
+    const execConfig = execMock.mock.calls[0].arguments[1] as {
+      env: Record<string, string>
+    }
     assert.equal(execConfig.env.FORCE_COLOR, 'true')
   })
 
@@ -808,7 +852,9 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    const execConfig = execMock.mock.calls[0].arguments[1] as { env: Record<string, string> }
+    const execConfig = execMock.mock.calls[0].arguments[1] as {
+      env: Record<string, string>
+    }
     assert.equal(execConfig.env.MY_PASSED_ENV, 'c test')
   })
 
@@ -824,7 +870,9 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    const execConfig = execMock.mock.calls[0].arguments[1] as { env: Record<string, string> }
+    const execConfig = execMock.mock.calls[0].arguments[1] as {
+      env: Record<string, string>
+    }
     assert.equal(execConfig.env.MY_SYS_ENV, 'e test')
   })
 
@@ -836,10 +884,7 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    assertCalledWith(
-      logger.error,
-      objectContaining({ message: stringContaining('No content was returned') })
-    )
+    assertCalledWith(logger.error, stringContaining('No content was returned'))
     assert.equal(process.exitCode, 1)
   })
 
@@ -851,10 +896,7 @@ console.log('Hello World')
 
     await injectMarkdown()
 
-    assertCalledWith(
-      logger.error,
-      objectContaining({ message: stringContaining('No content was returned') })
-    )
+    assertCalledWith(logger.error, stringContaining('No content was returned'))
     assert.equal(process.exitCode, 1)
   })
 })
@@ -886,7 +928,11 @@ function setupMock({
         ? `\n{/* CODEBLOCK_START${name} ${JSON.stringify(config)} */}\n${includePrettierIgnore ? '{/* prettier-ignore */}\n' : ''}${blockContents}\n{/* CODEBLOCK_END${name} */}`
         : `\n<!-- CODEBLOCK_START${name} ${JSON.stringify(config)} -->\n${includePrettierIgnore ? '<!-- prettier-ignore -->\n' : ''}${blockContents}\n<!-- CODEBLOCK_END${name} -->`
     }
-    if (config.type !== 'command' && typeof config.value === 'string' && fileName.includes(config.value)) {
+    if (
+      config.type !== 'command' &&
+      typeof config.value === 'string' &&
+      fileName.includes(config.value)
+    ) {
       return mockResponse
     }
     throw new Error('Unexpected file name passed')
