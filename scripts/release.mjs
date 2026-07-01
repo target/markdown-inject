@@ -1,17 +1,14 @@
-import fs from 'fs'
-import { execSync } from 'child_process'
+import { execSync } from 'node:child_process'
+import * as fs from 'node:fs'
+
 import { Octokit } from '@octokit/rest'
 
 const [, , action, fileName] = process.argv
 
 const actions = {
   check: async () => {
-    const {
-      GITHUB_REPOSITORY,
-      GH_TOKEN,
-      GITHUB_SHA,
-      GITHUB_RUN_ID,
-    } = process.env
+    const { GITHUB_REPOSITORY, GH_TOKEN, GITHUB_SHA, GITHUB_RUN_ID } =
+      process.env
 
     const { owner, repo } =
       /^(?<owner>[^/]+)\/(?<repo>.*)$/.exec(GITHUB_REPOSITORY)?.groups || {}
@@ -38,11 +35,11 @@ const actions = {
     if (
       // if any PRs attributed to this SHA have a `skip release` label
       prs.some(({ labels }) =>
-        labels.find(({ name }) => name === skipReleaseLabel)
+        labels.find(({ name }) => name === skipReleaseLabel),
       )
     ) {
       console.log(
-        `Identified matching PR with "${skipReleaseLabel}" label. Cancelling deployment.`
+        `Identified matching PR with "${skipReleaseLabel}" label. Cancelling deployment.`,
       )
       try {
         await gh.actions.cancelWorkflowRun({
@@ -113,6 +110,6 @@ if (actions[action]) {
   throw new Error(
     `Unrecognized action "${action}". Valid actions:\n${Object.keys(actions)
       .map((t) => `- ${t}`)
-      .join('\n')}`
+      .join('\n')}`,
   )
 }
