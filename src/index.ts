@@ -21,7 +21,6 @@ program
   .option(
     '-e, --no-system-environment',
     'prevents "command"s from receiving system environment',
-    false,
   )
   .description('Add file or command output to markdown documents.')
   .usage(

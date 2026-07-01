@@ -3,18 +3,17 @@
   "description": "Add file or command output to markdown documents.",
   "version": "4.1.7",
   "scripts": {
-    "prebuild": "npm run clean",
-    "typecheck": "tsc",
-    "clean": "rm -rf dist",
+    "validate": "pnpm run lint && pnpm run test && pnpm run typecheck && pnpm run markdown-inject",
     "lint": "eslint .",
     "test": "node --experimental-test-module-mocks --test 'src/**/*.test.ts'",
-    "prepare": "husky",
-    "validate": "npm run lint && npm test && npm run build",
+    "typecheck": "tsc",
     "markdown-inject": "node . -a",
-    "release": "npx standard-version --releaseCommitMessageFormat \"chore(release): {{currentTag}} [skip ci]\" --scripts.postchangelog \"npm run release:save\"",
+    "precommit": "eslint --fix",
+    "prepare": "husky",
+    "release": "commit-and-tag-version --releaseCommitMessageFormat \"chore(release): {{currentTag}} [skip ci]\" --scripts.postchangelog \"pnpm run release:save\"",
     "release:check": "node scripts/release.mjs check",
-    "release:save": "node scripts/release.mjs save release/new-release.md",
-    "release:post": "node scripts/release.mjs post release/new-release.md"
+    "release:post": "node scripts/release.mjs post release/new-release.md",
+    "release:save": "node scripts/release.mjs save release/new-release.md"
   },
   "bin": {
     "markdown-inject": "src/index.ts"
@@ -22,28 +21,25 @@
   "main": "src/index.ts",
   "dependencies": {
     "@commander-js/extra-typings": "15.0.0",
-    "env-ci": "7.3.0",
+    "env-ci": "11.2.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@octokit/rest": "18.12.0",
-    "@types/env-ci": "3.1.1",
-    "@types/node": "24.13.2",
-    "@types/shell-quote": "1.7.1",
+    "@octokit/rest": "22.0.1",
+    "@types/env-ci": "3.1.4",
+    "@types/node": "^24.13.2 <24.19.0",
+    "@types/shell-quote": "1.7.5",
+    "commit-and-tag-version": "12.7.3",
     "eslint": "9.39.4",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-prettier": "5.5.6",
     "husky": "9.1.7",
+    "lint-staged": "17.0.8",
     "prettier": "3.9.4",
-    "shell-quote": "1.7.3",
-    "standard-version": "9.3.2",
+    "shell-quote": "1.9.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.62.1"
-  },
-  "overrides": {
-    "json5": "2.2.3",
-    "decode-uri-component": "0.2.1"
   },
   "type": "module",
   "engines": {
