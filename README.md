@@ -84,7 +84,7 @@ Options:
 ~~~~~~~~~~bash
 File: .nvmrc
 
-v20.10.0
+v24.14.1
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->

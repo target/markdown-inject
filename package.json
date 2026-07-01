@@ -1,54 +1,57 @@
 {
   "name": "markdown-inject",
-  "version": "4.1.7",
   "description": "Add file or command output to markdown documents.",
-  "main": "dist/index.js",
-  "type": "module",
-  "bin": {
-    "markdown-inject": "dist/index.js"
-  },
-  "files": [
-    "dist"
-  ],
-  "engines": {
-    "node": ">=22"
-  },
+  "version": "4.1.7",
   "scripts": {
-    "start": "npm run build -- -w",
     "prebuild": "npm run clean",
-    "build": "tsc --build",
+    "typecheck": "tsc",
     "clean": "rm -rf dist",
     "lint": "eslint .",
-    "test": "node --experimental-transform-types --experimental-test-module-mocks --import \"data:text/javascript,import{register}from'node:module';import{pathToFileURL}from'node:url';register(new URL('./scripts/ts-loader.mjs',pathToFileURL('./')))\" --test 'src/**/*.test.ts'",
-    "prepare": "husky install",
+    "test": "node --experimental-test-module-mocks --test 'src/**/*.test.ts'",
+    "prepare": "husky",
     "validate": "npm run lint && npm test && npm run build",
-    "markdown-inject": "node dist -a",
+    "markdown-inject": "node . -a",
     "release": "npx standard-version --releaseCommitMessageFormat \"chore(release): {{currentTag}} [skip ci]\" --scripts.postchangelog \"npm run release:save\"",
     "release:check": "node scripts/release.mjs check",
     "release:save": "node scripts/release.mjs save release/new-release.md",
     "release:post": "node scripts/release.mjs post release/new-release.md"
   },
+  "bin": {
+    "markdown-inject": "src/index.ts"
+  },
+  "main": "src/index.ts",
   "dependencies": {
-    "commander": "7.2.0",
-    "env-ci": "7.3.0"
+    "@commander-js/extra-typings": "15.0.0",
+    "env-ci": "7.3.0",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@octokit/rest": "18.12.0",
-    "@types/commander": "2.12.2",
     "@types/env-ci": "3.1.1",
-    "@types/node": "22.15.21",
+    "@types/node": "24.13.2",
     "@types/shell-quote": "1.7.1",
-    "@typescript-eslint/eslint-plugin": "4.22.0",
-    "@typescript-eslint/parser": "4.22.0",
-    "eslint": "7.24.0",
-    "eslint-config-prettier": "8.2.0",
-    "eslint-plugin-prettier": "3.4.0",
-    "husky": "6.0.0",
-    "prettier": "2.2.1",
+    "eslint": "9.39.4",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-prettier": "5.5.6",
+    "husky": "9.1.7",
+    "prettier": "3.9.4",
     "shell-quote": "1.7.3",
     "standard-version": "9.3.2",
-    "typescript": "5.5.2"
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.62.1"
   },
+  "overrides": {
+    "json5": "2.2.3",
+    "decode-uri-component": "0.2.1"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "src"
+  ],
   "repository": {
     "type": "git",
     "url": "git@github.com:target/markdown-inject"
@@ -58,9 +61,5 @@
     "inject",
     "markdown inject"
   ],
-  "author": "",
-  "overrides": {
-    "json5": "2.2.3",
-    "decode-uri-component": "0.2.1"
-  }
+  "author": ""
 }
