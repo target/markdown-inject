@@ -240,9 +240,13 @@ ${endPragma}`
           const matchLength = codeblockMatch[0].length
 
           const pre = input.substring(0, index)
-          const post = input.substr(index + matchLength)
+          const post = input.slice(index + matchLength)
 
           modifiedFileContents = pre + newBlock + post
+          // Realign lastIndex: the replaced string may differ in length from the
+          // original match, so the next exec must start at the correct offset in
+          // the new string rather than the old one.
+          codeblockRegex.lastIndex = pre.length + newBlock.length
         }
       } catch (err) {
         const lines = codeblockMatch.input

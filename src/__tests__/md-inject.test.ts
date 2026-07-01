@@ -900,6 +900,44 @@ console.log('Hello World')
     assertCalledWith(logger.error, stringContaining('No content was returned'))
     assert.equal(process.exitCode, 1)
   })
+
+  it('processes subsequent blocks when an earlier block replacement is shorter than the original', async () => {
+    const longContent = 'A'.repeat(400)
+    mockGlob(['foo.md'])
+    readFileMock.mock.mockImplementation(async (fileName: string) => {
+      if (fileName === 'foo.md') {
+        return `<!-- CODEBLOCK_START {"type":"command","value":"cmd1"} -->
+<!-- prettier-ignore -->
+~~~~~~~~~~bash
+$ cmd1
+
+${longContent}
+~~~~~~~~~~
+
+<!-- CODEBLOCK_END -->
+
+<!-- CODEBLOCK_START {"type":"command","value":"cmd2"} -->
+<!-- CODEBLOCK_END -->`
+      }
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+
+    execMock.mock.mockImplementation(
+      (cmd: string, _env: unknown, cb: (e: null, out: string) => void) => {
+        cb(null, cmd === 'cmd1' ? 'short' : 'cmd2 result')
+      },
+    )
+
+    await injectMarkdown()
+
+    assertCalled(writeFileMock)
+    const written = writeFileMock.mock.calls[0].arguments[1] as string
+    assert.ok(written.includes('short'), 'cmd1 block should be updated')
+    assert.ok(
+      written.includes('cmd2 result'),
+      'cmd2 block should be updated even though cmd1 block shrank',
+    )
+  })
 })
 
 // ---------------------------------------------------------------------------
