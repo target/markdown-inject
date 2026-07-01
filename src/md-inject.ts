@@ -347,8 +347,8 @@ const readGitignorePatterns = async (): Promise<string[]> => {
     })
     return contents
       .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith('#'))
+      .map((line) => line.trim().replace(/\/$/, ''))
+      .filter((line) => line && !line.startsWith('#') && !line.startsWith('!'))
   } catch {
     return []
   }
@@ -357,9 +357,16 @@ const readGitignorePatterns = async (): Promise<string[]> => {
 const isGitignored = (entry: string, patterns: string[]): boolean => {
   const parts = entry.split(path.sep)
   return patterns.some((pattern) => {
-    // Strip leading slash (root-anchored patterns are treated the same here)
     const p = pattern.replace(/^\//, '')
-    // Match any path segment or the full relative path
+    if (p.includes('*') || p.includes('?')) {
+      // Convert gitignore glob to a regex: ** crosses path separators, * and ? do not.
+      const regexStr = p
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .split('**')
+        .map((seg) => seg.replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]'))
+        .join('.*')
+      return new RegExp(`(^|/)${regexStr}(/|$)`).test(entry)
+    }
     return (
       parts.some((part) => part === p) ||
       entry === p ||

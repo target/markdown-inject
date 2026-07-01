@@ -4,6 +4,7 @@ import { describe, it, mock, beforeEach, after } from 'node:test'
 import {
   assertCalledWith,
   assertNotCalled,
+  assertNotCalledWith,
   assertCalled,
   assertCalledTimes,
   stringContaining,
@@ -64,13 +65,16 @@ const { default: injectMarkdown } = await import('../md-inject.ts')
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Make glob return an async iterable over the given file list */
+/** Make glob return an async iterable over the given file list, respecting the exclude option */
 function mockGlob(files: string[]): void {
-  globMock.mock.mockImplementation(() =>
-    (async function* () {
-      yield* files
-    })(),
-  )
+  globMock.mock.mockImplementation((...args: unknown[]) => {
+    const opts = args[1] as { exclude?: (f: string) => boolean } | undefined
+    return (async function* () {
+      for (const file of files) {
+        if (!opts?.exclude?.(file)) yield file
+      }
+    })()
+  })
 }
 
 function resetAllMocks(): void {
@@ -937,6 +941,55 @@ ${longContent}
       written.includes('cmd2 result'),
       'cmd2 block should be updated even though cmd1 block shrank',
     )
+  })
+})
+
+describe('gitignore exclusion', () => {
+  beforeEach(() => {
+    resetAllMocks()
+    execMock.mock.mockImplementation((...args: unknown[]) => {
+      const cb = args[args.length - 1] as (err: null, stdout: string) => void
+      cb(null, '')
+    })
+    envCiMock.mock.mockImplementation(() => ({ isCi: false, isPr: false }))
+    process.exitCode = undefined as unknown as number
+  })
+
+  function setupGitignoreTest(
+    gitignoreContent: string,
+    files: Record<string, string>,
+  ): void {
+    mockGlob(Object.keys(files))
+    readFileMock.mock.mockImplementation(async (fileName: string) => {
+      if ((fileName as string).endsWith('.gitignore')) return gitignoreContent
+      const content = files[fileName as string]
+      if (content !== undefined) return content
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+  }
+
+  it('excludes files under a directory matched by a trailing-slash pattern (dist/)', async () => {
+    setupGitignoreTest('dist/', {
+      'README.md': '# Root',
+      'dist/README.md': '# Dist',
+    })
+
+    await injectMarkdown()
+
+    assertCalledWith(readFileMock, 'README.md', { encoding: 'utf-8' })
+    assertNotCalledWith(readFileMock, 'dist/README.md', { encoding: 'utf-8' })
+  })
+
+  it('excludes files matching a wildcard gitignore pattern (*.generated.md)', async () => {
+    setupGitignoreTest('*.generated.md', {
+      'README.md': '# Root',
+      'api.generated.md': '# Generated',
+    })
+
+    await injectMarkdown()
+
+    assertCalledWith(readFileMock, 'README.md', { encoding: 'utf-8' })
+    assertNotCalledWith(readFileMock, 'api.generated.md', { encoding: 'utf-8' })
   })
 })
 
