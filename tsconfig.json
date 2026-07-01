@@ -1,14 +1,19 @@
 {
+  // Based off of https://nodejs.org/docs/latest-v24.x/api/typescript.html#type-stripping
   "compilerOptions": {
-    "outDir": "dist",
-    "esModuleInterop": true,
-    "noImplicitAny": true,
+    "noEmit": true,
+
+    "target": "esnext",
+    "module": "nodenext",
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
-    "lib": ["ES2019"],
-    "module": "commonjs",
-    "target": "ES2019",
-    "sourceMap": true
-  },
-  "include": ["src/**/*"],
-  "exclude": ["**/*.test.*"]
+
+    "types": ["node"],
+    "noImplicitAny": true,
+    "strict": true,
+    "skipLibCheck": true
+  }
 }

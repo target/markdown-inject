@@ -1,51 +1,46 @@
-import glob from 'globby'
-import fs from 'fs-extra'
-import path from 'path'
-import { exec } from 'child_process'
-import Logger from './Logger'
+import { exec } from 'node:child_process'
+import { Dirent } from 'node:fs'
+import * as fs from 'node:fs/promises'
+import path from 'node:path'
+
 import envCi from 'env-ci'
+import { z } from 'zod'
 
-enum BlockSourceType {
-  file = 'file',
-  command = 'command',
-}
+import Logger from './Logger.ts'
+import { fileLocation, prettifyZodErrors } from './utils.ts'
 
-export interface BlockOptions {
-  value: string
-  hideValue?: boolean
-  environment?: NodeJS.ProcessEnv
-  ignore?: boolean
-  language?: string
-  trim?: boolean
-  type?: BlockSourceType
-}
-
-interface BlockInputOptions extends Omit<BlockOptions, 'type'> {
-  type?: `${BlockSourceType}`
-}
+const BlockSourceType = { file: 'file', command: 'command' } as const
+const BlockSchema = z.union([
+  z.object({
+    ignore: z.literal(true),
+  }),
+  z.object({
+    value: z.string(),
+    hideValue: z.boolean().optional().default(false),
+    environment: z.record(z.string(), z.string()).optional().default({}),
+    ignore: z.boolean().optional().default(false),
+    language: z.string().optional(),
+    trim: z.boolean().optional().default(true),
+    type: z.enum(Object.values(BlockSourceType)).default('file').optional(),
+  }),
+])
 
 interface ReplaceOptions {
   blockPrefix: string
-  followSymbolicLinks: boolean
   globPattern: string
   quiet: boolean
   useSystemEnvironment: boolean
 }
 
+export const allGlobPattern = './**/*.{md,mdx}'
+
 const main = async (
-  {
-    blockPrefix,
-    followSymbolicLinks,
-    globPattern,
-    quiet,
-    useSystemEnvironment,
-  }: ReplaceOptions = {
+  { blockPrefix, globPattern, quiet, useSystemEnvironment }: ReplaceOptions = {
     blockPrefix: 'CODEBLOCK',
-    followSymbolicLinks: true,
-    globPattern: '**/*.md',
+    globPattern: allGlobPattern,
     quiet: false,
     useSystemEnvironment: true,
-  }
+  },
 ): Promise<void> => {
   const logger = new Logger(quiet)
 
@@ -53,17 +48,27 @@ const main = async (
 
   if (ciEnv.isCi && 'isPr' in ciEnv && ciEnv.isPr) {
     logger.warn(
-      'markdown-inject does not run during pull request builds. Exiting with no changes.'
+      'markdown-inject does not run during pull request builds. Exiting with no changes.',
     )
     return
   }
 
   logger.group('Injecting Markdown Blocks')
 
-  const markdownFiles = await glob(globPattern, {
-    followSymbolicLinks,
-    gitignore: true,
-  })
+  const markdownFiles: string[] = []
+  const gitignorePatterns = await readGitignorePatterns()
+
+  for await (const file of fs.glob(globPattern, {
+    cwd: process.cwd(),
+    withFileTypes: false,
+    exclude: <T extends Dirent | string>(fileName: T) =>
+      isGitignored(
+        fileName instanceof Dirent ? fileName.name : fileName,
+        gitignorePatterns,
+      ),
+  }) as AsyncIterable<string>) {
+    markdownFiles.push(file)
+  }
 
   const processMarkdownFile = async (fileName: string) => {
     let originalFileContents
@@ -76,7 +81,6 @@ const main = async (
 
     let modifiedFileContents = originalFileContents
 
-    let codeblockMatch: RegExpExecArray
     let blocksChanged = 0
     let blocksIgnored = 0
     let totalBlocks = 0
@@ -95,27 +99,34 @@ const main = async (
       Object.entries(comment)
         .map(
           ([commentType, { start: commentStart, end: commentEnd }]) =>
-            `(?<${commentType}_start_pragma>${commentStart}\\s*${blockPrefix}_START(?<${commentType}_name_ext>\\w*)\\s+(?<${commentType}_config>\\{(?:.|\\n)+?\\})\\s*${commentEnd}).*?(?<${commentType}_end_pragma>${commentStart}\\s*${blockPrefix}_END\\k<${commentType}_name_ext>\\s*${commentEnd})`
+            `(?<${commentType}_start_pragma>${commentStart}\\s*${blockPrefix}_START(?<${commentType}_name_ext>\\w*)\\s+(?<${commentType}_config>\\{(?:.|\\n)+?\\})\\s*${commentEnd}).*?(?<${commentType}_end_pragma>${commentStart}\\s*${blockPrefix}_END\\k<${commentType}_name_ext>\\s*${commentEnd})`,
         )
         .join('|'),
-      'gs'
+      'gs',
     )
 
+    let codeblockMatch: RegExpExecArray | null
     while ((codeblockMatch = codeblockRegex.exec(modifiedFileContents))) {
+      const codeblockMatchGroups = codeblockMatch?.groups
+
+      if (!codeblockMatchGroups) {
+        continue
+      }
+
       const matchGroups = Object.fromEntries(
-        Object.entries(codeblockMatch.groups)
+        Object.entries(codeblockMatchGroups)
           .filter(([groupName]) =>
             groupName.startsWith(
-              codeblockMatch.groups.html_config ? 'html_' : 'mdx_'
-            )
+              codeblockMatchGroups.html_config ? 'html_' : 'mdx_',
+            ),
           )
           .map(([groupName, groupValue]) => [
             groupName.replace(/^(html|mdx)_/, ''),
             groupValue,
-          ])
+          ]),
       )
       try {
-        let inputConfig: BlockInputOptions
+        let inputConfig: unknown
         try {
           inputConfig = JSON.parse(matchGroups.config)
         } catch (err) {
@@ -123,45 +134,30 @@ const main = async (
           throw err
         }
 
-        const resolvedType = BlockSourceType[inputConfig.type]
+        const blockParseResult = await BlockSchema.safeParseAsync(inputConfig, {
+          reportInput: true,
+        })
+        if (!blockParseResult.success) {
+          const errMsg = [
+            'Invalid config:',
+            JSON.stringify(inputConfig, null, 2),
+            '',
+            'Issues:',
+            prettifyZodErrors(blockParseResult.error),
+            '',
+          ]
 
-        const blockSourceTypes = {
-          command: 'command',
-          file: 'file',
+          throw new Error(errMsg.join('\n'))
         }
+        const blockConfig = blockParseResult.data
 
-        if (inputConfig.type !== undefined && resolvedType === undefined) {
-          throw new Error(
-            `Unexpected "type" of "${
-              inputConfig.type
-            }". Valid types are ${Object.values(blockSourceTypes)
-              .map((s) => `"${s}"`)
-              .join(', ')}`
-          )
-        }
-
-        const config: BlockOptions = {
-          ...inputConfig,
-          type: resolvedType,
-        }
-
-        const {
-          type: blockSourceType = BlockSourceType.file,
-          hideValue = false,
-          trim = true,
-          ignore = false,
-          environment = {},
-        } = config
-
-        if (ignore) {
+        if (blockConfig.ignore) {
           blocksIgnored++
           totalBlocks++
           continue
         }
 
-        let { language, value } = config
-
-        if (!value) {
+        if (!blockConfig.value) {
           throw new Error('No "value" was provided.')
         }
 
@@ -171,35 +167,43 @@ const main = async (
 
         let out: string
 
-        if (blockSourceType === BlockSourceType.command) {
+        if (blockConfig.type === BlockSourceType.command) {
           out = await new Promise((resolve, reject) => {
             exec(
-              value,
-              { env: prepareEnvironment(environment, useSystemEnvironment) },
+              blockConfig.value,
+              {
+                env: prepareEnvironment(
+                  blockConfig.environment,
+                  useSystemEnvironment,
+                ),
+              },
               (err, stdout) => {
                 if (err) {
                   return reject(err)
                 }
                 return resolve(stdout)
-              }
+              },
             )
           })
         } else {
           // BlockSourceType.file
-          const fileLocation = path.resolve(path.dirname(fileName), value)
+          const fileLocation = path.resolve(
+            path.dirname(fileName),
+            blockConfig.value,
+          )
           out = await fs.readFile(fileLocation, { encoding: 'utf-8' })
-          if (!language) {
-            language = path.extname(fileLocation).replace(/^\./, '')
+          if (!blockConfig.language) {
+            blockConfig.language = path.extname(fileLocation).replace(/^\./, '')
           }
-          value = path.relative(process.cwd(), fileLocation)
+          blockConfig.value = path.relative(process.cwd(), fileLocation)
         }
 
         if (!out || !out.trim()) {
           throw new Error('No content was returned.')
         }
 
-        if (!language) {
-          language = 'bash'
+        if (!blockConfig.language) {
+          blockConfig.language = 'bash'
         }
 
         // Code blocks can start with an arbitrary length, and must end with at least the same.
@@ -212,18 +216,18 @@ const main = async (
           ? '{/* prettier-ignore */}'
           : '<!-- prettier-ignore -->'
 
-        if (trim) {
+        if (blockConfig.trim) {
           out = out.trim()
         }
 
         const newBlock = `${startPragma}
 ${prettierIgnore}
-${codeblockFence}${language}${
-          hideValue
+${codeblockFence}${blockConfig.language}${
+          blockConfig.hideValue
             ? ''
             : `\n${
-                blockSourceType === BlockSourceType.command ? '$' : 'File:'
-              } ${value}\n`
+                blockConfig.type === BlockSourceType.command ? '$' : 'File:'
+              } ${blockConfig.value}\n`
         }
 ${out}
 ${codeblockFence}
@@ -238,32 +242,40 @@ ${endPragma}`
           const matchLength = codeblockMatch[0].length
 
           const pre = input.substring(0, index)
-          const post = input.substr(index + matchLength)
+          const post = input.slice(index + matchLength)
 
           modifiedFileContents = pre + newBlock + post
+          // Realign lastIndex: the replaced string may differ in length from the
+          // original match, so the next exec must start at the correct offset in
+          // the new string rather than the old one.
+          codeblockRegex.lastIndex = pre.length + newBlock.length
         }
       } catch (err) {
         const lines = codeblockMatch.input
           .slice(0, codeblockMatch.index)
           .split('\n')
-        const lineNo = lines.length
-        const col = lines.pop().length
 
-        console.error(
-          `Error processing codeblock at "${path.join(
-            process.cwd(),
-            fileName
-          )}:${lineNo}:${col}":`
-        )
+        const codeblockLocation = fileLocation({
+          file: path.join(process.cwd(), fileName),
+          line: lines.length,
+          col: lines.pop()?.length,
+        })
 
-        throw err
+        logger.error(`Error processing codeblock at "${codeblockLocation}":`)
+        if (err instanceof Error) {
+          logger.error(err.message)
+        } else {
+          logger.error(err)
+        }
+
+        process.exitCode = 1
       }
     }
 
     if (modifiedFileContents !== originalFileContents) {
       await fs.writeFile(fileName, modifiedFileContents)
       logger.log(
-        `${fileName}: ${blocksChanged} of ${totalBlocks} blocks changed (${blocksIgnored} ignored)`
+        `${fileName}: ${blocksChanged} of ${totalBlocks} blocks changed (${blocksIgnored} ignored)`,
       )
     }
 
@@ -282,13 +294,13 @@ ${endPragma}`
     const [totalChanges, totalIgnored, totalBlocks] = results.reduce(
       (
         [totalChanges, totalIgnored, totalBlocks],
-        [itemChanges, itemIgnored, itemTotal]
+        [itemChanges, itemIgnored, itemTotal],
       ) => [
         totalChanges + itemChanges,
         totalIgnored + itemIgnored,
         totalBlocks + itemTotal,
       ],
-      [0, 0, 0]
+      [0, 0, 0],
     )
 
     if (totalBlocks === 0) {
@@ -298,7 +310,7 @@ ${endPragma}`
     }
 
     logger.log(
-      `Total: ${totalChanges} of ${totalBlocks} blocks (${totalIgnored} ignored)`
+      `Total: ${totalChanges} of ${totalBlocks} blocks (${totalIgnored} ignored)`,
     )
   } catch (err) {
     logger.error(err)
@@ -309,7 +321,7 @@ ${endPragma}`
 
 const prepareEnvironment = (
   providedEnvironment: NodeJS.ProcessEnv,
-  useSystemEnvironment: boolean
+  useSystemEnvironment: boolean,
 ) => {
   const systemEnvironment = useSystemEnvironment ? process.env : {}
   providedEnvironment = Object.entries(providedEnvironment)
@@ -328,6 +340,41 @@ const prepareEnvironment = (
     FORCE_COLOR: '0',
     ...providedEnvironment,
   }
+}
+
+const readGitignorePatterns = async (): Promise<string[]> => {
+  try {
+    const contents = await fs.readFile(path.join(process.cwd(), '.gitignore'), {
+      encoding: 'utf-8',
+    })
+    return contents
+      .split('\n')
+      .map((line) => line.trim().replace(/\/$/, ''))
+      .filter((line) => line && !line.startsWith('#') && !line.startsWith('!'))
+  } catch {
+    return []
+  }
+}
+
+const isGitignored = (entry: string, patterns: string[]): boolean => {
+  const parts = entry.split(path.sep)
+  return patterns.some((pattern) => {
+    const p = pattern.replace(/^\//, '')
+    if (p.includes('*') || p.includes('?')) {
+      // Convert gitignore glob to a regex: ** crosses path separators, * and ? do not.
+      const regexStr = p
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .split('**')
+        .map((seg) => seg.replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]'))
+        .join('.*')
+      return new RegExp(`(^|/)${regexStr}(/|$)`).test(entry)
+    }
+    return (
+      parts.some((part) => part === p) ||
+      entry === p ||
+      entry.startsWith(p + path.sep)
+    )
+  })
 }
 
 export default main

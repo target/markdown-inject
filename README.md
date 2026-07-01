@@ -36,7 +36,7 @@ Optionally, wire up `markdown-inject` to a git pre-commit hook tool like [husky]
   CODEBLOCK_START
   {
     "type": "command",
-    "value": "npm run --silent markdown-inject -- --help",
+    "value": "pnpm --silent run markdown-inject --help",
     "hideValue": true
   }
 -->
@@ -52,17 +52,15 @@ Examples:
 Add file or command output to markdown documents.
 
 Options:
-  -v, --version                   output the version number
-  -a, --all                       applies a globPattern of './**/*.md'
-                                  (default: false)
-  -b, --block-prefix <prefix>     specifies the prefix for START and END HTML
-                                  comment blocks (default: "CODEBLOCK")
-  -n, --no-follow-symbolic-links  prevents globs from following symlinks
-  -q, --quiet                     emits no console log statements (default:
-                                  false)
-  -e, --no-system-environment     prevents "command"s from receiving system
-                                  environment
-  -h, --help                      display help for command
+  -v, --version                output the version number
+  -a, --all                    applies a globPattern of './**/*.{md,mdx}'
+                               (default: false)
+  -b, --block-prefix <prefix>  specifies the prefix for START and END HTML
+                               comment blocks (default: "CODEBLOCK")
+  -q, --quiet                  emits no console log statements (default: false)
+  -e, --no-system-environment  prevents "command"s from receiving system
+                               environment
+  -h, --help                   display help for command
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->
@@ -84,7 +82,7 @@ Options:
 ~~~~~~~~~~bash
 File: .nvmrc
 
-v20.10.0
+v24.18.0
 ~~~~~~~~~~
 
 <!-- CODEBLOCK_END -->

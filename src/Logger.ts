@@ -3,7 +3,7 @@ import { Writable } from 'stream'
 
 class Logger extends Console {
   constructor(quiet = false) {
-    super(quiet ? new Writable() : process.stdout)
+    super(quiet ? new Writable() : process.stdout, process.stderr)
   }
 }
 
