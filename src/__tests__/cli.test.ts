@@ -13,6 +13,9 @@ const injectMarkdownMock = mock.fn(async () => {})
 
 await mock.module('../md-inject.ts', {
   defaultExport: injectMarkdownMock,
+  namedExports: {
+    allGlobPattern: './**/*.{md,mdx}',
+  },
 })
 
 // Spy on console.error (top-level is fine — stderr doesn't affect test runner IPC)

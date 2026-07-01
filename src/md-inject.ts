@@ -32,10 +32,12 @@ interface ReplaceOptions {
   useSystemEnvironment: boolean
 }
 
+export const allGlobPattern = './**/*.{md,mdx}'
+
 const main = async (
   { blockPrefix, globPattern, quiet, useSystemEnvironment }: ReplaceOptions = {
     blockPrefix: 'CODEBLOCK',
-    globPattern: '**/*.md',
+    globPattern: allGlobPattern,
     quiet: false,
     useSystemEnvironment: true,
   },

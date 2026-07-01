@@ -143,7 +143,7 @@ describe('Markdown injection', () => {
   it('collects all in-repo markdown files', async () => {
     await injectMarkdown()
 
-    assertCalledWith(globMock, '**/*.md', objectContaining({}))
+    assertCalledWith(globMock, './**/*.{md,mdx}', objectContaining({}))
   })
 
   it('throws gracefully when an error occurs while reading the file', async () => {

@@ -84,6 +84,7 @@ export function assertCalledWith(fn: MockFn, ...expected: unknown[]): void {
   const matched = fn.mock.calls.some((c) =>
     callMatchesArgs(c.arguments, expected),
   )
+
   assert.ok(
     matched,
     `Expected mock to have been called with ${JSON.stringify(expected)}\n` +

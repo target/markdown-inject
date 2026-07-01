@@ -2,10 +2,8 @@
 
 import { Command } from '@commander-js/extra-typings'
 
-import injectMarkdown from './md-inject.ts'
+import injectMarkdown, { allGlobPattern } from './md-inject.ts'
 import pkg from '../package.json' with { type: 'json' }
-
-const allGlobPattern = './**/*.{md,mdx}'
 
 const program = new Command()
 
