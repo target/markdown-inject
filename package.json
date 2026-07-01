@@ -61,5 +61,16 @@
     "inject",
     "markdown inject"
   ],
-  "author": ""
+  "author": {
+    "name": "Marty Henderson",
+    "email": "10hendersonm@gmail.com",
+    "url": "https://github.com/10hendersonm"
+  },
+  "contributors": [
+    {
+      "name": "Brian Muenzenmeyer",
+      "email": "brian.muenzenmeyer@gmail.com",
+      "url": "https://github.com/bmuenzenmeyer"
+    }
+  ]
 }
