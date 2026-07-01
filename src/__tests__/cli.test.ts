@@ -33,7 +33,11 @@ describe('CLI', () => {
   beforeEach(() => {
     injectMarkdownMock.mock.resetCalls()
     consoleErrorMock.mock.resetCalls()
-    stdoutWriteMock = mock.method(process.stdout, 'write', () => true) as ReturnType<typeof mock.fn>
+    stdoutWriteMock = mock.method(
+      process.stdout,
+      'write',
+      () => true,
+    ) as ReturnType<typeof mock.fn>
     // Replace process.exit so it doesn't actually exit
     process.exit = mock.fn() as unknown as typeof process.exit
   })
