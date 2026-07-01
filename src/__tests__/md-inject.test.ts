@@ -21,7 +21,7 @@ await mock.module('node:child_process', {
   namedExports: { exec: execMock },
 })
 
-const envCiMock = mock.fn()
+const envCiMock = mock.fn<() => { isCi: boolean; isPr: boolean }>()
 await mock.module('env-ci', {
   defaultExport: envCiMock,
 })
@@ -45,8 +45,9 @@ await mock.module('../Logger.ts', {
 })
 
 // fs/promises mock
-const globMock = mock.fn()
-const readFileMock = mock.fn()
+const globMock =
+  mock.fn<(...args: any[]) => AsyncGenerator<string, void, unknown>>()
+const readFileMock = mock.fn<(...args: any[]) => Promise<string>>()
 const writeFileMock = mock.fn()
 await mock.module('node:fs/promises', {
   namedExports: {
