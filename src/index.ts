@@ -1,47 +1,43 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander'
-import injectMarkdown from './md-inject.js'
-import { createRequire } from 'node:module'
+import { Command } from '@commander-js/extra-typings'
 
-const { name, version } = createRequire(import.meta.url)('../package.json')
+import injectMarkdown from './md-inject.ts'
+import pkg from '../package.json' with { type: 'json' }
 
-const allGlobPattern = './**/*.md'
+const allGlobPattern = './**/*.{md,mdx}'
 
 const program = new Command()
+
 program
-  .version(version, '-v, --version')
-  .name(name)
+  .version(pkg.version, '-v, --version')
+  .name(pkg.name)
   .arguments('[globPattern]')
   .option('-a, --all', `applies a globPattern of '${allGlobPattern}'`, false)
   .option(
     '-b, --block-prefix <prefix>',
     'specifies the prefix for START and END HTML comment blocks',
-    'CODEBLOCK'
-  )
-  .option(
-    '-n, --no-follow-symbolic-links',
-    'prevents globs from following symlinks'
+    'CODEBLOCK',
   )
   .option('-q, --quiet', 'emits no console log statements', false)
   .option(
     '-e, --no-system-environment',
     'prevents "command"s from receiving system environment',
-    false
+    false,
   )
   .description('Add file or command output to markdown documents.')
   .usage(
     `[options] <glob pattern | -a>
 
 Examples:
-  $ npx ${name} -a
-  $ npx ${name} 'README.md'
-  $ npx ${name} './**/*.{md,mdx}'`
+  $ npx ${pkg.name} -a
+  $ npx ${pkg.name} 'README.md'
+  $ npx ${pkg.name} './**/*.{md,mdx}'`,
   )
   .action(async (globPattern, options) => {
     if (options.all && globPattern) {
       console.error(
-        `Options -a / --all and a globPattern ('${globPattern}') can not be provided together. Please select one or the other.`
+        `Options -a / --all and a globPattern ('${globPattern}') can not be provided together. Please select one or the other.`,
       )
       return process.exit(1)
     }
@@ -56,7 +52,6 @@ Examples:
 
     await injectMarkdown({
       blockPrefix: options.blockPrefix,
-      followSymlinks: options.followSymbolicLinks,
       globPattern,
       quiet: options.quiet,
       useSystemEnvironment: options.systemEnvironment,
